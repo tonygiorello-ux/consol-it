@@ -3,6 +3,7 @@
 Console web d'intervention. Elle lance, sur le poste où elle est ouverte, les scripts PowerShell suivants :
 
 - **Poste de travail** : inventaire puis restauration lors d'une migration de poste ;
+- **Diagnostics** : diagnostics du poste en lecture seule (lenteurs PC / Office / réseau, veille, matériel, fiche garantie, crashs, imprimantes, cartographie réseau, domaine et GPO, sécurité, inventaire des logiciels), plus l'installation optionnelle de nmap ;
 - **Administration** : audits en lecture seule (AD, DNS, DHCP, Veeam, Hyper-V, ESXi, vCenter).
 
 Le site ne fait que servir les scripts. Inventaires, rapports et dossiers de migration restent sur le poste ou sur le support USB choisi.
@@ -18,6 +19,8 @@ sources/                     ← ce que l'on modifie
   catalogue.json             liste des actions de la console (titre, groupe, admin ou non, source…)
   audits/engine.ps1          moteur commun des audits (questions, connexion WinRM/SSH, rapport)
   audits/body_*.ps1          contrôles propres à chaque audit
+  diagnostics/body_*.ps1     contrôles de chaque diagnostic poste (même moteur et même rapport que les audits)
+  outils/                    scripts publiés tels quels (ex. Installer-Nmap.ps1)
   poste/*.ps1                Inventaire-Poste.ps1, Restaure-Poste.ps1
   ui/                        interface des rapports HTML (partagée par tous les scripts)
   lanceur/                   lanceur local (protocole consoleit:) et son installeur
@@ -27,7 +30,7 @@ site/                        ← publié par Cloudflare
 worker/index.js              accès par code PIN (session navigateur + jeton du lanceur)
 outils/build.mjs             construit site/ à partir de sources/ (Node.js, sans dépendance)
 wrangler.jsonc               déploiement Cloudflare : build automatique puis publication de site/
-tests/Lancer-Tests.ps1       encodage, syntaxe, audits exécutés sur données factices
+tests/Lancer-Tests.ps1       encodage, syntaxe, audits sur données factices, diagnostics avec commandes Windows simulées (tests/stubs_windows.ps1)
 .github/workflows/           tests automatiques à chaque push
 ```
 
@@ -118,7 +121,7 @@ git push                                  # Cloudflare republie en 1 à 2 minute
       "description": "…", "questions": ["…"], "prerequis": "…" }
     ```
   - Valeurs possibles :
-    - `groupe` : `poste`, `annuaire`, `sauvegarde`, `virtualisation` ou `outils` ;
+    - `groupe` : `poste`, `diagnostic` (avec `categorie`, ex. « Performance et lenteurs »), `annuaire`, `sauvegarde`, `virtualisation` ou `outils` ;
     - `admin` : `true` demande l'élévation UAC ;
     - `parent` + `libelle` + `arguments` (ex. `["-VerifierSeulement"]`) : variante d'une action, affichée comme bouton supplémentaire sur la fiche du parent. Seuls des commutateurs sont acceptés, jamais de valeurs ;
     - `assemblage` : `"audit"` pour un corps d'audit utilisant le moteur commun (voir `audits/body_*.ps1`). Si on l'omet, le script est publié tel quel.

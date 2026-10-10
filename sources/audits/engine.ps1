@@ -1,4 +1,4 @@
-# ==================================================================================
+﻿# ==================================================================================
 #  MOTEUR COMMUN (identique dans chaque script d'audit)
 #  Questions interactives, connexion à la cible, collecte des contrôles, rapport HTML.
 # ==================================================================================
@@ -154,6 +154,10 @@ function Add-Check {
   })
 }
 function Cmd($libelle, $commande) { [ordered]@{ t = 'cmd'; l = $libelle; c = $commande; adm = $true } }
+function CmdUser($libelle, $commande) { [ordered]@{ t = 'cmd'; l = $libelle; c = $commande; adm = $false } }
+function Lien($libelle, $chemin) { if ($chemin -and (Test-Path -LiteralPath $chemin)) { [ordered]@{ t = 'web'; l = $libelle; u = ([uri](Resolve-Path -LiteralPath $chemin).Path).AbsoluteUri } } }
+function Test-EstAdmin { ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) }
+function Cap([scriptblock]$sb) { try { ((& $sb 2>&1 | Out-String -Width 220).TrimEnd()) } catch { "[ERREUR] $($_.Exception.Message)" } }
 function Add-Erreur($rubrique, $titre, $err, $cible = '') {
   Add-Check -Rubrique $rubrique -Titre $titre -Statut 'ATT' -Resume "Contrôle impossible : $err" -Cible $cible
 }
@@ -182,7 +186,7 @@ function Save-Audit($nomFichier, $titre, $client, $rubriques, $prerequis) {
     checks = $all
   }
   $path = Join-Path (Get-DossierRapports) $nomFichier
-  Write-Report $path "$titre — $client" $data
+  Write-Report $path $(if ($client) { "$titre — $client" } else { "$titre — $($cibles -join ', ')" }) $data
   Write-Host ''
   Write-Host ('=' * 78) -ForegroundColor DarkCyan
   $verdict = if ($n.CRIT) { "$($n.CRIT) point(s) critique(s), $($n.ATT) point(s) d'attention" } elseif ($n.ATT) { "$($n.ATT) point(s) d'attention" } else { 'Aucun problème détecté' }

@@ -96,6 +96,7 @@ pre .c{color:var(--codemute)}
     <nav>
       <div class="g">Interventions</div>
       <a href="#poste" data-v="poste">Poste de travail<i id="n-poste"></i></a>
+      <a href="#diag" data-v="diag">Diagnostics<i id="n-diag"></i></a>
       <a href="#admin" data-v="admin">Administration<i id="n-admin"></i></a>
       <div class="g">Ce poste</div>
       <a href="#lanceur" data-v="lanceur">Lanceur</a>
@@ -110,6 +111,12 @@ pre .c{color:var(--codemute)}
       <h1>Poste de travail</h1>
       <p class="lead">Migration d'un utilisateur vers un nouveau poste. Les deux scripts tournent dans la session de l'utilisateur, sans élévation : ils lisent et écrivent son profil.</p>
       <div class="flow" id="flow"></div>
+    </section>
+
+    <section class="view" id="v-diag">
+      <h1>Diagnostics</h1>
+      <p class="lead">Diagnostics du poste sur lequel la console est ouverte, en lecture seule. Chaque diagnostic ouvre un rapport HTML (synthèse, points à traiter, commandes de correction) enregistré dans <code>Bureau\Rapports-Audit</code>. Les diagnostics marqués « Session utilisateur » doivent tourner dans la session de la personne concernée.</p>
+      <div id="diag"></div>
     </section>
 
     <section class="view" id="v-admin">
@@ -219,8 +226,16 @@ pre .c{color:var(--codemute)}
       var it = S.filter(function (s) { return s.groupe === g[0]; });
       return it.length ? '<h2>' + esc(g[1]) + (g[2] ? '<span>' + esc(g[2]) + '</span>' : '') + '</h2><div class="grid">' + it.map(function (s) { return card(s); }).join('') + '</div>' : '';
     }).join('');
+    var CATS = ['Performance et lenteurs', 'Matériel et garantie', 'Système et stabilité', 'Réseau et impression', 'Domaine et GPO', 'Sécurité', 'Inventaire'];
+    var diag = S.filter(function (s) { return s.groupe === 'diagnostic'; });
+    diag.forEach(function (s) { if (s.categorie && CATS.indexOf(s.categorie) < 0) { CATS.push(s.categorie); } });
+    document.getElementById('diag').innerHTML = CATS.map(function (c) {
+      var it = diag.filter(function (s) { return (s.categorie || 'Autres') === c; });
+      return it.length ? '<h2>' + esc(c) + '<span>' + it.length + ' diagnostic' + (it.length > 1 ? 's' : '') + '</span></h2><div class="grid">' + it.map(function (s) { return card(s); }).join('') + '</div>' : '';
+    }).join('');
     document.getElementById('n-poste').textContent = poste.length;
-    document.getElementById('n-admin').textContent = S.length - poste.length;
+    document.getElementById('n-diag').textContent = diag.length;
+    document.getElementById('n-admin').textContent = S.filter(function (s) { return GRP.some(function (g) { return g[0] === s.groupe; }); }).length;
   }).catch(function () { document.getElementById('err').classList.add('on'); });
 
   function route() {

@@ -38,8 +38,8 @@ function assemblerAudit(e) {
   const corps = lire(e.source), moteur = lire('audits/engine.ps1');
   return `<#
   ${e.titre} — ${e.description}
-  Script autonome et interactif : il demande le serveur à auditer et les identifiants, puis produit
-  un rapport HTML dans le dossier « Rapports-Audit » du Bureau. LECTURE SEULE : aucune modification.
+  Script autonome et interactif : il pose ses questions dans la console, puis produit un rapport HTML
+  dans le dossier « Rapports-Audit » du Bureau. LECTURE SEULE : aucune modification.
   Généré par outils/build.mjs depuis ${e.source} — modifier la source, pas ce fichier.
 
   Lancement (PowerShell en administrateur, dans le dossier du script) :

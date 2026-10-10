@@ -180,6 +180,213 @@
       "prerequis": "SSH activé dans la VAMI, shell bash pour root.",
       "source": "audits/body_vCenter.ps1",
       "assemblage": "audit"
+    },
+    {
+      "id": "lenteur-pc",
+      "groupe": "diagnostic",
+      "categorie": "Performance et lenteurs",
+      "titre": "Diagnostic lenteur PC",
+      "fichier": "Diagnostic-LenteurPC.ps1",
+      "source": "diagnostics/body_LenteurPC.ps1",
+      "assemblage": "audit",
+      "admin": true,
+      "cible": "Poste concerné, idéalement pendant la lenteur",
+      "description": "Uptime, processeur, mémoire, disques (espace, HDD/SSD, SMART, latence), démarrage, redémarrage en attente, antivirus multiples, erreurs système.",
+      "questions": [
+        "Aucune : le diagnostic s’exécute directement"
+      ],
+      "prerequis": "Administrateur conseillé (SMART, disques physiques)."
+    },
+    {
+      "id": "lenteur-office",
+      "groupe": "diagnostic",
+      "categorie": "Performance et lenteurs",
+      "titre": "Diagnostic lenteur Office",
+      "fichier": "Diagnostic-LenteurOffice.ps1",
+      "source": "diagnostics/body_LenteurOffice.ps1",
+      "assemblage": "audit",
+      "admin": false,
+      "cible": "Session de l’utilisateur concerné",
+      "description": "Compléments Outlook/Word/Excel, OST/PST volumineux, cache des pièces jointes, imprimante par défaut, Normal.dotm, modèles de démarrage, OneDrive, plantages.",
+      "questions": [
+        "Aucune : le diagnostic s’exécute directement"
+      ],
+      "prerequis": "Office fermé de préférence pour des mesures fiables."
+    },
+    {
+      "id": "lenteur-reseau",
+      "groupe": "diagnostic",
+      "categorie": "Performance et lenteurs",
+      "titre": "Diagnostic lenteur réseau",
+      "fichier": "Diagnostic-LenteurReseau.ps1",
+      "source": "diagnostics/body_LenteurReseau.ps1",
+      "assemblage": "audit",
+      "admin": false,
+      "cible": "Poste concerné",
+      "description": "Lien Ethernet et Wi-Fi, IP/DHCP, passerelle, DNS, latence Internet, débit, erreurs de carte, proxy et VPN.",
+      "questions": [
+        "Mesurer le débit descendant (15 Mo) ?"
+      ],
+      "prerequis": "Aucun droit particulier."
+    },
+    {
+      "id": "veille",
+      "groupe": "diagnostic",
+      "categorie": "Performance et lenteurs",
+      "titre": "Diagnostic mise en veille",
+      "fichier": "Diagnostic-Veille.ps1",
+      "source": "diagnostics/body_Veille.ps1",
+      "assemblage": "audit",
+      "admin": true,
+      "cible": "Poste concerné",
+      "description": "Modes de veille disponibles, délais, mises en veille effectives, blocages actifs, réveils, rapports sleepstudy et transitions.",
+      "questions": [
+        "Aucune : le diagnostic s’exécute directement"
+      ],
+      "prerequis": "Administrateur (powercfg /requests, rapports Windows)."
+    },
+    {
+      "id": "materiel",
+      "groupe": "diagnostic",
+      "categorie": "Matériel et garantie",
+      "titre": "Diagnostic santé matérielle",
+      "fichier": "Diagnostic-Materiel.ps1",
+      "source": "diagnostics/body_Materiel.ps1",
+      "assemblage": "audit",
+      "admin": true,
+      "cible": "Poste concerné",
+      "description": "Santé et usure des disques, SMART, périphériques en erreur, mémoire, usure et rapport de batterie.",
+      "questions": [
+        "Aucune : le diagnostic s’exécute directement"
+      ],
+      "prerequis": "Administrateur (compteurs de fiabilité, batterie)."
+    },
+    {
+      "id": "garantie",
+      "groupe": "diagnostic",
+      "categorie": "Matériel et garantie",
+      "titre": "Fiche garantie PC",
+      "fichier": "Fiche-Garantie.ps1",
+      "source": "diagnostics/body_Garantie.ps1",
+      "assemblage": "audit",
+      "admin": true,
+      "cible": "Poste concerné",
+      "description": "Numéro de série / Service Tag, code express Dell, BIOS, mémoire, disques, batterie, écrans, MAC ; fiche texte copiée dans le presse-papiers et liens vers la garantie constructeur.",
+      "questions": [
+        "Aucune : le diagnostic s’exécute directement"
+      ],
+      "prerequis": "Administrateur pour les numéros de série complets."
+    },
+    {
+      "id": "crashs",
+      "groupe": "diagnostic",
+      "categorie": "Système et stabilité",
+      "titre": "Diagnostic crashs et redémarrages",
+      "fichier": "Diagnostic-Crashs.ps1",
+      "source": "diagnostics/body_Crashs.ps1",
+      "assemblage": "audit",
+      "admin": true,
+      "cible": "Poste concerné (30 derniers jours)",
+      "description": "Arrêts inattendus, coupures Kernel-Power 41, écrans bleus et dumps, erreurs WHEA, pilote graphique, plantages d’applications.",
+      "questions": [
+        "Aucune : le diagnostic s’exécute directement"
+      ],
+      "prerequis": "Administrateur (dossier Minidump)."
+    },
+    {
+      "id": "imprimantes",
+      "groupe": "diagnostic",
+      "categorie": "Réseau et impression",
+      "titre": "Diagnostic imprimantes",
+      "fichier": "Diagnostic-Imprimantes.ps1",
+      "source": "diagnostics/body_Imprimantes.ps1",
+      "assemblage": "audit",
+      "admin": false,
+      "cible": "Session de l’utilisateur concerné",
+      "description": "Spouleur, imprimantes hors ligne, imprimante par défaut, joignabilité des ports TCP/IP, files bloquées, pilotes, journal PrintService.",
+      "questions": [
+        "Aucune : le diagnostic s’exécute directement"
+      ],
+      "prerequis": "Session de l’utilisateur (ses imprimantes)."
+    },
+    {
+      "id": "cartographie",
+      "groupe": "diagnostic",
+      "categorie": "Réseau et impression",
+      "titre": "Cartographie réseau",
+      "fichier": "Cartographie-Reseau.ps1",
+      "source": "diagnostics/body_Cartographie.ps1",
+      "assemblage": "audit",
+      "admin": false,
+      "cible": "Réseau local du poste (ou plage saisie)",
+      "description": "Découverte des appareils (ping + ARP), services ouverts, fabricant, type d’appareil, services sensibles regroupés par risque. Natif, sans nmap.",
+      "questions": [
+        "Plage CIDR (Entrée = réseau local détecté)"
+      ],
+      "prerequis": "Aucune installation. Réseaux dont on a la charge uniquement."
+    },
+    {
+      "id": "domaine-gpo",
+      "groupe": "diagnostic",
+      "categorie": "Domaine et GPO",
+      "titre": "Diagnostic domaine et GPO",
+      "fichier": "Diagnostic-DomaineGPO.ps1",
+      "source": "diagnostics/body_DomaineGPO.ps1",
+      "assemblage": "audit",
+      "admin": true,
+      "cible": "Poste du domaine",
+      "description": "Canal sécurisé, contrôleur joint, profil réseau, heure, application des GPO (rapport gpresult), lecteurs réseau.",
+      "questions": [
+        "Aucune : le diagnostic s’exécute directement"
+      ],
+      "prerequis": "Administrateur (canal sécurisé, GPO ordinateur)."
+    },
+    {
+      "id": "securite",
+      "groupe": "diagnostic",
+      "categorie": "Sécurité",
+      "titre": "Diagnostic sécurité et conformité",
+      "fichier": "Diagnostic-Securite.ps1",
+      "source": "diagnostics/body_Securite.ps1",
+      "assemblage": "audit",
+      "admin": true,
+      "cible": "Poste concerné",
+      "description": "Antivirus et menaces, BitLocker et clé de récupération, correctifs, version de Windows, pare-feu, administrateurs locaux, UAC, RDP/NLA, SMBv1.",
+      "questions": [
+        "Aucune : le diagnostic s’exécute directement"
+      ],
+      "prerequis": "Administrateur (BitLocker, comptes locaux)."
+    },
+    {
+      "id": "inventaire-logiciels",
+      "groupe": "diagnostic",
+      "categorie": "Inventaire",
+      "titre": "Inventaire des logiciels",
+      "fichier": "Inventaire-Logiciels.ps1",
+      "source": "diagnostics/body_InventaireLogiciels.ps1",
+      "assemblage": "audit",
+      "admin": false,
+      "cible": "Poste concerné",
+      "description": "Logiciels installés (export CSV), versions hors support, doublons, outils de prise en main à distance.",
+      "questions": [
+        "Aucune : le diagnostic s’exécute directement"
+      ],
+      "prerequis": "Aucun droit particulier."
+    },
+    {
+      "id": "installer-nmap",
+      "groupe": "diagnostic",
+      "categorie": "Réseau et impression",
+      "titre": "Installer nmap",
+      "fichier": "Installer-Nmap.ps1",
+      "source": "outils/Installer-Nmap.ps1",
+      "admin": true,
+      "cible": "Poste d’administration",
+      "description": "Installe nmap et Npcap (winget, sinon installeur officiel signé). Optionnel : la cartographie fonctionne sans. MODIFIE le poste.",
+      "questions": [
+        "Confirmation avant installation"
+      ],
+      "prerequis": "Administrateur. Un antivirus peut bloquer nmap."
     }
   ]
 }
