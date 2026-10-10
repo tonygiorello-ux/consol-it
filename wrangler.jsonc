@@ -1,0 +1,13 @@
+// Déploiement Cloudflare Workers (site statique) : « npx wrangler deploy »
+// La commande de build ci-dessous s'exécute automatiquement avant chaque déploiement
+// (Workers Builds sur push GitHub, ou en local) : elle génère site/scripts, site/lanceur et site/manifest.json.
+{
+  "name": "consol-it",
+  "compatibility_date": "2025-09-01",
+  "build": {
+    "command": "node outils/build.mjs"
+  },
+  "assets": {
+    "directory": "./site"
+  }
+}

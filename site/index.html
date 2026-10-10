@@ -102,7 +102,7 @@ pre .c{color:var(--codemute)}
     <div class="lstate">Les scripts s'exécutent <b>sur le poste</b> où cette page est ouverte. Rapports et dossiers de migration restent <b>en local</b> : rien n'est envoyé au site.</div>
   </aside>
   <main>
-    <p class="alert err" id="err">Le catalogue des scripts (manifest.json) n'a pas pu être chargé. Ouvrir la console depuis son adresse https, pas depuis un fichier local.</p>
+    <p class="alert err" id="err">Le catalogue des scripts (manifest.json) est introuvable : le build n'a pas été exécuté lors du déploiement (il génère manifest.json, scripts/ et lanceur/). En local, lancer d'abord node outils/build.mjs.</p>
 
     <section class="view" id="v-poste">
       <h1>Poste de travail</h1>

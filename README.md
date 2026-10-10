@@ -7,7 +7,7 @@ Console web d'intervention. Elle lance, sur le poste où elle est ouverte, les s
 
 Le site ne fait que servir les scripts. Inventaires, rapports et dossiers de migration restent sur le poste ou sur le support USB choisi.
 
-Le cycle de travail : on modifie en local, on pousse sur GitHub, puis Cloudflare Pages reconstruit et publie le site. En parallèle, GitHub Actions lance les tests.
+Le cycle de travail : on modifie en local, on pousse sur GitHub, puis Cloudflare (Workers Builds) reconstruit et publie le site. En parallèle, GitHub Actions lance les tests.
 
 ---
 
@@ -25,6 +25,7 @@ site/                        ← publié par Cloudflare
   index.html, _headers, robots.txt   (versionnés)
   scripts/, lanceur/, manifest.json  (GÉNÉRÉS par le build, non versionnés)
 outils/build.mjs             construit site/ à partir de sources/ (Node.js, sans dépendance)
+wrangler.jsonc               déploiement Cloudflare : build automatique puis publication de site/
 tests/Lancer-Tests.ps1       encodage, syntaxe, audits exécutés sur données factices
 .github/workflows/           tests automatiques à chaque push
 ```
@@ -50,25 +51,27 @@ Ne jamais modifier `site/scripts` : ces fichiers sont recréés à chaque build.
    git push -u origin main
    ```
 
-### 3. Cloudflare Pages relié au dépôt
+### 3. Cloudflare relié au dépôt (Workers)
 
-1. Ouvrir Cloudflare, puis **Workers & Pages**, **Create**, **Pages**, **Connect to Git**, et autoriser GitHub sur le dépôt `console-it`.
-2. Réglages du build :
+Le fichier `wrangler.jsonc` décrit le déploiement. Le site statique est le dossier `site`, et la commande `node outils/build.mjs` s'exécute automatiquement avant chaque déploiement.
+
+1. Ouvrir Cloudflare, puis **Workers & Pages**, **Create**, **Import a repository**, et choisir `consol-it`.
+   Si le dépôt n'apparaît pas : sur GitHub, aller dans Settings, Applications, Cloudflare Workers and Pages, Configure, puis ajouter le dépôt.
+2. Réglages :
 
    | Réglage | Valeur |
    |---|---|
-   | Production branch | `main` |
-   | Framework preset | None |
-   | Build command | `node outils/build.mjs` |
-   | Build output directory | `site` |
-   | Variable d'environnement | `NODE_VERSION` = `20` |
+   | Nom du Worker | `consol-it` (doit correspondre à `name` dans `wrangler.jsonc`) |
+   | Build command | *(vide)* : le build est déclenché par `wrangler.jsonc` |
+   | Deploy command | `npx wrangler deploy` |
+   | Branche de production | `main` |
 
-3. **Save and Deploy**. Chaque push sur `main` republie le site. Une autre branche donne un aperçu sur `<branche>.console-it.pages.dev`.
-4. Domaine personnalisé (conseillé) : **Custom domains**, par exemple `outils.mondomaine.fr`.
+3. Chaque push sur `main` republie le site sur `https://consol-it.<compte>.workers.dev`. Le journal se trouve dans l'onglet **Deployments** du Worker, puis **View build**.
+4. Domaine personnalisé (conseillé) : dans le Worker, **Settings**, **Domains & Routes**, **Add**, puis **Custom domain**.
 
 ### 4. Protéger la console (Cloudflare Zero Trust, Access)
 
-1. Créer une application **Self-hosted** sur le domaine de la console **et** sur `console-it.pages.dev` et `*.console-it.pages.dev`.
+1. Créer une application **Self-hosted** sur le domaine de la console **et** sur `consol-it.<compte>.workers.dev`.
    Règle *Allow* : les e-mails autorisés.
 2. Créer une **seconde application** sur les mêmes domaines, limitée aux chemins `scripts/*`, `lanceur/*` et `manifest.json`.
    Règle *Bypass* : *Everyone*.
@@ -86,12 +89,12 @@ node outils/build.mjs                     # construit site/ (erreurs de catalogu
 pwsh -File tests/Lancer-Tests.ps1         # ou : powershell -File tests\Lancer-Tests.ps1
 git add -A
 git commit -m "Audit DNS : contrôle des redirecteurs conditionnels"
-git push                                  # Cloudflare republie en ~1 minute
+git push                                  # Cloudflare republie en 1 à 2 minutes
 ```
 
 - **Tester un script sur sa machine**, sans lanceur :
   `powershell -ExecutionPolicy Bypass -File site\scripts\Audit-DNS.ps1`
-- **Tester la console en local** : lancer `npx wrangler pages dev site`, puis ouvrir http://localhost:8788. Le menu Lanceur donne alors la commande d'installation pour `localhost`. Le lanceur pointe ensuite vers le local. Réinstaller depuis la console en ligne pour revenir à la normale.
+- **Tester la console en local** : lancer `npx wrangler dev` (build compris), puis ouvrir http://localhost:8787. Le menu Lanceur donne alors la commande d'installation pour `localhost`. Le lanceur pointe ensuite vers le local. Réinstaller depuis la console en ligne pour revenir à la normale.
 - **Ajouter un nouveau script** :
   - Placer le `.ps1` dans `sources/`, par exemple `sources/outils/Nettoyage-Profil.ps1`.
   - Ajouter une entrée dans `sources/catalogue.json` :
