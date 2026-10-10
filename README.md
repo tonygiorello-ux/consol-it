@@ -107,6 +107,7 @@ git push                                  # Cloudflare republie en 1 à 2 minute
   - Valeurs possibles :
     - `groupe` : `poste`, `annuaire`, `sauvegarde`, `virtualisation` ou `outils` ;
     - `admin` : `true` demande l'élévation UAC ;
+    - `parent` + `libelle` + `arguments` (ex. `["-VerifierSeulement"]`) : variante d'une action, affichée comme bouton supplémentaire sur la fiche du parent. Seuls des commutateurs sont acceptés, jamais de valeurs ;
     - `assemblage` : `"audit"` pour un corps d'audit utilisant le moteur commun (voir `audits/body_*.ps1`). Si on l'omet, le script est publié tel quel.
 - **Nouvel audit** : copier un `body_*.ps1` existant comme modèle. Il dispose de `Get-Cible`, `Invoke-Cible`, `Invoke-SshLot`, `Add-Check`, `To-Table`, `Cmd` et `Save-Audit` (voir `engine.ps1`). Ajouter ses données factices dans `tests/fixtures.ps1`.
 
@@ -120,7 +121,8 @@ Le build convertit chaque script en UTF-8 avec BOM et en CRLF. Il calcule aussi 
 2. **Lancer une action** : cliquer sur **▶ Lancer**. Le navigateur demande d'ouvrir « Console IT ». Une fenêtre sur le poste affiche l'action, le mode et l'empreinte, et il faut confirmer.
    - Pour les audits, Windows demande l'élévation (UAC).
    - L'inventaire et la restauration s'ouvrent dans la session de l'utilisateur, sans élévation : ils lisent et écrivent son profil.
-3. **Fin d'intervention chez un client** : menu **Lanceur**, puis copier la commande de retrait.
+3. Le lanceur est **valable 8 heures**. Il se retire ensuite seul : une tâche planifiée de l'utilisateur s'en charge, et il vérifie aussi sa date à chaque clic. Réinstaller le prolonge de 8 h. Pour le retirer plus tôt : menu **Lanceur**, puis copier la commande de retrait.
+4. **Restauration** : deux boutons sur la même fiche, **Restaurer et contrôler**, ou **Vérifier seulement** (`-VerifierSeulement` : ne modifie rien, régénère le rapport).
 
 Chaque fiche propose aussi **Copier la commande**. Elle lance le script sans le lanceur.
 

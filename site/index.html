@@ -56,6 +56,7 @@ h2 span{font-size:13px;font-weight:500;color:var(--mute)}
 .cible{margin:2px 0 0;font-size:13px;color:var(--mute)}
 .num{font:700 12px/1 var(--f-mono);color:var(--accent);letter-spacing:.06em;display:block;margin-bottom:6px}
 .desc{margin:0;font-size:14px}
+.var{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:4px}
 .mode{flex:none;font:600 11.5px/1 var(--f-ui);border-radius:999px;padding:6px 10px;white-space:nowrap}
 .mode.u{background:var(--userbg);color:var(--user)}.mode.a{background:var(--admbg);color:var(--adm)}
 .acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:auto}
@@ -118,9 +119,9 @@ pre .c{color:var(--codemute)}
 
     <section class="view" id="v-lanceur">
       <h1>Lanceur sur ce poste</h1>
-      <p class="lead">Un navigateur ne peut pas exécuter de programme. Le lanceur fait le lien : une petite installation par utilisateur, sans droits administrateur, qui associe les boutons « Lancer » à PowerShell.</p>
+      <p class="lead">Un navigateur ne peut pas exécuter de programme. Le lanceur fait le lien : une petite installation par utilisateur, sans droits administrateur, qui associe les boutons « Lancer » à PowerShell. Il est valable 8 heures, puis se retire seul du poste.</p>
       <div class="box">
-        <p><b>Installer</b> : ouvrir PowerShell (normal, pas administrateur) sur le poste, coller la commande, Entrée.</p>
+        <p><b>Installer</b> : ouvrir PowerShell (normal, pas administrateur) sur le poste, coller la commande, Entrée. Relancer la même commande prolonge le lanceur de 8 heures.</p>
         <pre id="cmd-install"></pre>
         <div class="acts"><button class="btn go" type="button" data-copy="cmd-install">Copier la commande d'installation</button></div>
       </div>
@@ -136,7 +137,7 @@ pre .c{color:var(--codemute)}
       </div>
       <h2>Retirer le lanceur</h2>
       <div class="box">
-        <p>À faire en fin d'intervention chez un client : supprime le protocole et les fichiers du lanceur pour cet utilisateur.</p>
+        <p>Le lanceur se retire seul au bout de 8 heures : une tâche planifiée de l'utilisateur le supprime à l'heure prévue (ou au démarrage suivant si le poste était éteint), et il vérifie aussi sa date à chaque clic. Pour le retirer tout de suite en fin d'intervention :</p>
         <pre id="cmd-remove"></pre>
         <div class="acts"><button class="btn" type="button" data-copy="cmd-remove">Copier la commande de retrait</button></div>
       </div>
@@ -152,28 +153,42 @@ pre .c{color:var(--codemute)}
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function inst(extra) { return TLS + "& ([scriptblock]::Create([Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('" + O + "/lanceur/Installer-Lanceur.ps1')).TrimStart([char]0xFEFF)))" + extra; }
   document.getElementById('cmd-install').textContent = inst(" -Base '" + O + "'");
-  document.getElementById('cmd-remove').textContent = "Remove-Item 'HKCU:\\Software\\Classes\\consoleit' -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item \"$env:LOCALAPPDATA\\ConsoleIT\" -Recurse -Force -ErrorAction SilentlyContinue; Write-Host 'Lanceur retiré.'";
+  document.getElementById('cmd-remove').textContent = "Remove-Item 'HKCU:\\Software\\Classes\\consoleit' -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item \"$env:LOCALAPPDATA\\ConsoleIT\" -Recurse -Force -ErrorAction SilentlyContinue; Unregister-ScheduledTask -TaskName 'ConsoleIT-Expiration' -Confirm:$false -ErrorAction SilentlyContinue; Write-Host 'Lanceur retiré.'";
 
   function direct(s) {
     var head = TLS + "$f = Join-Path $env:TEMP '" + s.fichier + "'; (New-Object Net.WebClient).DownloadFile('" + O + "/scripts/" + s.fichier + "', $f); ";
-    return s.admin ? head + "Start-Process powershell.exe -Verb RunAs -ArgumentList ('-NoProfile -ExecutionPolicy Bypass -NoExit -File \"{0}\"' -f $f)"
-                   : head + "powershell.exe -NoProfile -ExecutionPolicy Bypass -File $f";
+    var opt = (s.arguments || []).filter(function (a) { return /^-[A-Za-z][A-Za-z0-9]{0,40}$/.test(a); }).join(' ');
+    return s.admin ? head + "Start-Process powershell.exe -Verb RunAs -ArgumentList ('-NoProfile -ExecutionPolicy Bypass -NoExit -File \"{0}\"" + (opt ? ' ' + opt : '') + "' -f $f)"
+                   : head + "powershell.exe -NoProfile -ExecutionPolicy Bypass -File $f" + (opt ? ' ' + opt : '');
   }
+  var KIDS = {};
   function card(s, num) {
+    var acts = [s].concat(KIDS[s.id] || []);
+    var multi = acts.length > 1;
+    var cmds = acts.map(function (a) {
+      return '<pre id="d-' + esc(a.id) + '"><span class="c"># ' + (multi ? esc(a.libelle || a.titre) + ' — ' : '') + 'PowerShell ' + (a.admin ? 'normal : l\u2019élévation est demandée ensuite' : 'dans la session de l\u2019utilisateur') + '</span>\n' + esc(direct(a)) + '</pre>' +
+        '<div class="acts" style="margin:8px 0 10px"><button class="btn" type="button" data-copy="d-' + esc(a.id) + '" data-strip="1">Copier' + (multi ? ' : ' + esc(a.libelle || a.titre) : ' la commande') + '</button></div>';
+    }).join('');
+    var btns = acts.map(function (a, i) {
+      return '<a class="btn' + (i === 0 ? ' go' : '') + '" href="consoleit:run/' + esc(a.id) + '" data-run="' + esc(a.titre) + '" title="' + esc(a.description) + '">▶ ' + esc(a.libelle || 'Lancer') + '</a>';
+    }).join('');
+    var variantes = multi ? '<ul class="var">' + acts.map(function (a) { return '<li><b>' + esc(a.libelle || a.titre) + '</b> : ' + esc(a.description) + '</li>'; }).join('') + '</ul>' : '';
     return '<article class="card" id="s-' + esc(s.id) + '">' +
       '<div class="ch"><div>' + (num ? '<span class="num">ÉTAPE ' + num + '</span>' : '') + '<h3>' + esc(s.titre) + '</h3><p class="cible">' + esc(s.cible) + '</p></div>' +
       '<span class="mode ' + (s.admin ? 'a">Administrateur · UAC' : 'u">Session utilisateur') + '</span></div>' +
-      '<p class="desc">' + esc(s.description) + '</p>' +
+      (multi ? variantes : '<p class="desc">' + esc(s.description) + '</p>') +
       '<details><summary>▸ Questions posées, prérequis, lancement sans lanceur</summary>' +
       '<dl><dt>Questions</dt><dd><ul>' + (s.questions || []).map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ul></dd><dt>Prérequis</dt><dd>' + esc(s.prerequis) + '</dd>' +
       '<dt>Version</dt><dd>' + esc(s.fichier) + ' · ' + esc(s.modifie) + ' · ' + Math.round(s.taille / 1024) + ' Ko</dd></dl>' +
-      '<pre id="d-' + esc(s.id) + '"><span class="c"># PowerShell ' + (s.admin ? 'normal : l’élévation est demandée ensuite' : 'dans la session de l’utilisateur') + '</span>\n' + esc(direct(s)) + '</pre>' +
-      '<div class="acts" style="margin-top:8px"><button class="btn" type="button" data-copy="d-' + esc(s.id) + '" data-strip="1">Copier la commande</button></div></details>' +
-      '<div class="acts"><a class="btn go" href="consoleit:run/' + esc(s.id) + '" data-run="' + esc(s.titre) + '">▶ Lancer</a><span class="sha" title="Empreinte SHA-256 vérifiée par le lanceur">' + esc(s.sha256.slice(0, 12)) + '</span></div></article>';
+      cmds + '</details>' +
+      '<div class="acts">' + btns + '<span class="sha" title="Empreinte SHA-256 vérifiée par le lanceur">' + esc(s.sha256.slice(0, 12)) + '</span></div></article>';
   }
   var GRP = [['annuaire', 'Annuaire', 'AD, DNS, DHCP'], ['sauvegarde', 'Sauvegarde', 'Veeam'], ['virtualisation', 'Virtualisation', 'Hyper-V, ESXi, vCenter'], ['outils', 'Outils', '']];
   fetch('manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); }).then(function (m) {
-    var S = m.scripts || [];
+    var S = (m.scripts || []).filter(function (s) {
+      if (s.parent) { (KIDS[s.parent] = KIDS[s.parent] || []).push(s); return false; }
+      return true;
+    });
     var poste = S.filter(function (s) { return s.groupe === 'poste'; }).sort(function (a, b) { return (a.etape || 9) - (b.etape || 9); });
     var inv = poste.filter(function (s) { return s.id === 'inventaire'; })[0], res = poste.filter(function (s) { return s.id === 'restaure'; })[0];
     var copie = '<article class="card info"><div class="ch"><div><span class="num">ÉTAPE 2</span><h3>Copie des données</h3><p class="cible">Ancien poste, depuis le rapport d’inventaire</p></div><span class="mode u">Session utilisateur</span></div>' +

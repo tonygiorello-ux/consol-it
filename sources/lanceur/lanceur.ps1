@@ -8,6 +8,7 @@
     - demande toujours confirmation sur le poste (nom de l'action, mode d'exécution, source, empreinte),
       puis Windows demande l'élévation (UAC) pour les actions « administrateur ».
   Rien n'est envoyé au site : les rapports et le dossier de migration restent sur le poste.
+  Durée de vie limitée (8 h par défaut) : passé ce délai, le lanceur se retire du poste.
 #>
 param([string]$Url)
 
@@ -25,6 +26,14 @@ function Stop-Erreur($m) { [void](Show-Box $m 'OK' 'Error'); exit 1 }
 
 try {
   $cfg = Get-Content -LiteralPath (Join-Path $Dir 'config.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  $fin = $null
+  try { $fin = [datetime]::ParseExact([string]$cfg.expire, 'yyyyMMddHHmm', [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]'AssumeUniversal,AdjustToUniversal') } catch { }
+  if (-not $fin -or [DateTime]::UtcNow -ge $fin) {
+    Remove-Item -LiteralPath 'HKCU:\Software\Classes\consoleit' -Recurse -Force -ErrorAction SilentlyContinue
+    try { Unregister-ScheduledTask -TaskName 'ConsoleIT-Expiration' -Confirm:$false -ErrorAction SilentlyContinue } catch { }
+    Remove-Item -LiteralPath $Dir -Recurse -Force -ErrorAction SilentlyContinue
+    Stop-Erreur "Le lanceur Console IT a expiré sur ce poste$(if ($fin) { ' (fin de validité : ' + $fin.ToLocalTime().ToString('dd/MM/yyyy HH:mm') + ')' }). Il vient d'être retiré.`n`nPour continuer : console, menu Lanceur, réinstaller."
+  }
   $base = ([string]$cfg.base).TrimEnd('/')
   if ($base -notmatch '^(https://[a-zA-Z0-9.-]+(:\d+)?|http://(localhost|127\.0\.0\.1)(:\d+)?)(/[A-Za-z0-9._~/-]*)?$') { Stop-Erreur "Configuration invalide : $base. Réinstaller le lanceur depuis la console." }
 
@@ -52,7 +61,11 @@ try {
 
   $mode = if ($e.admin) { 'PowerShell ADMINISTRATEUR (Windows va demander l''élévation)' } else { "PowerShell dans la session de $env:USERDOMAIN\$env:USERNAME (sans élévation)" }
   $msg = "Lancer « $($e.titre) » sur $env:COMPUTERNAME ?`n`nExécution : $mode`nSource : $base/scripts/$($e.fichier)`nEmpreinte SHA-256 : $($sha.Substring(0, 16))…"
+  $extra = @($e.arguments | Where-Object { $_ })
+  foreach ($x in $extra) { if ([string]$x -notmatch '^-[A-Za-z][A-Za-z0-9]{0,40}$') { Stop-Erreur "Argument non autorisé dans le manifeste pour $id : $x" } }
+  if ($extra.Count) { $msg += "`nOptions : $($extra -join ' ')" }
   if ($nouveau) { $msg += "`n`nPremière exécution de cette version sur ce poste." }
+  $msg += "`n`nLanceur valable jusqu'à $($fin.ToLocalTime().ToString('HH:mm')) le $($fin.ToLocalTime().ToString('dd/MM'))."
   if ((Show-Box $msg 'YesNo' 'Question') -ne [System.Windows.Forms.DialogResult]::Yes) { exit 0 }
   $ap[$id] = $sha
   try { [IO.File]::WriteAllText($apPath, ($ap | ConvertTo-Json), (New-Object Text.UTF8Encoding $false)) } catch { }
@@ -63,6 +76,7 @@ try {
   [IO.File]::WriteAllBytes($f, $bytes)
   $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
   $arg = '-NoProfile -ExecutionPolicy Bypass -NoExit -File "{0}"' -f $f
+  if ($extra.Count) { $arg += ' ' + ($extra -join ' ') }
   try {
     if ($e.admin) { Start-Process -FilePath $ps -ArgumentList $arg -Verb RunAs -WorkingDirectory $sd }
     else { Start-Process -FilePath $ps -ArgumentList $arg -WorkingDirectory $sd }

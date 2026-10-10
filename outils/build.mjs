@@ -86,12 +86,20 @@ const cat = JSON.parse(lire('catalogue.json'));
 rmSync(join(SITE, 'scripts'), { recursive: true, force: true });
 rmSync(join(SITE, 'lanceur'), { recursive: true, force: true });
 const ids = new Set();
+const generes = new Map();
 for (const e of cat.scripts) {
   verifier(/^[a-z0-9-]{1,40}$/.test(e.id || ''), `id invalide : ${e.id}`);
   verifier(!ids.has(e.id), `id en double : ${e.id}`); ids.add(e.id);
   verifier(/^[A-Za-z0-9_.-]+\.ps1$/.test(e.fichier || ''), `${e.id} : nom de fichier invalide`);
   verifier(existsSync(join(SRC, e.source || '')), `${e.id} : source absente (${e.source})`);
   if (!existsSync(join(SRC, e.source || ''))) { continue; }
+  for (const a of e.arguments || []) { verifier(/^-[A-Za-z][A-Za-z0-9]{0,40}$/.test(a), `${e.id} : argument non autorisé « ${a} » (seulement des commutateurs comme -VerifierSeulement)`); }
+  if (e.parent) { verifier(cat.scripts.some((x) => x.id === e.parent && !x.parent), `${e.id} : parent inconnu (${e.parent})`); }
+  const deja = generes.get(e.fichier);
+  if (deja) {
+    verifier(deja.source === e.source, `${e.fichier} produit par deux sources différentes`);
+    Object.assign(e, { sha256: deja.sha256, taille: deja.taille, modifie: deja.modifie }); delete e.source; delete e.assemblage; continue;
+  }
   let texte;
   if (e.assemblage === 'audit') { texte = assemblerAudit(e); }
   else if (e.assemblage === 'poste') { texte = injecterUi(lire(e.source) + '\n', e.fichier); }
@@ -101,6 +109,7 @@ for (const e of cat.scripts) {
   e.taille = buf.length;
   const deps = [join('sources', e.source)].concat(e.assemblage === 'audit' ? ['sources/audits/engine.ps1', 'sources/ui'] : e.assemblage === 'poste' ? ['sources/ui/ui.css', 'sources/ui/ui.js'] : []);
   e.modifie = dateGit(deps) || new Date().toISOString().slice(0, 10);
+  generes.set(e.fichier, { source: e.source, sha256: e.sha256, taille: e.taille, modifie: e.modifie });
   delete e.source; delete e.assemblage;
 }
 for (const f of ['lanceur.ps1', 'Installer-Lanceur.ps1']) { ecrirePs(join(SITE, 'lanceur', f), lire('lanceur/' + f) + '\n'); }

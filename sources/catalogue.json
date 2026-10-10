@@ -32,7 +32,28 @@
       ],
       "prerequis": "Première session ouverte, écrans réglés, logiciels installés, Office et navigateurs lancés une fois puis fermés.",
       "source": "poste/Restaure-Poste.ps1",
-      "assemblage": "poste"
+      "assemblage": "poste",
+      "libelle": "Restaurer et contrôler"
+    },
+    {
+      "id": "restaure-verif",
+      "parent": "restaure",
+      "libelle": "Vérifier seulement",
+      "groupe": "poste",
+      "titre": "Restauration du poste (vérification seule)",
+      "fichier": "Restaure-Poste.ps1",
+      "source": "poste/Restaure-Poste.ps1",
+      "assemblage": "poste",
+      "admin": false,
+      "arguments": [
+        "-VerifierSeulement"
+      ],
+      "cible": "Nouveau poste, session de l’utilisateur",
+      "description": "Refait uniquement la comparaison ancien / nouveau poste et régénère le rapport, sans rien modifier. À relancer après les corrections.",
+      "questions": [
+        "Dossier d’inventaire : recherché sur tous les lecteurs, clé USB comprise"
+      ],
+      "prerequis": "Restauration déjà faite (ou poste préparé à la main)."
     },
     {
       "id": "audit-ad",
