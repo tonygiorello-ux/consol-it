@@ -112,7 +112,10 @@ for (const e of cat.scripts) {
   generes.set(e.fichier, { source: e.source, sha256: e.sha256, taille: e.taille, modifie: e.modifie });
   delete e.source; delete e.assemblage;
 }
-for (const f of ['lanceur.ps1', 'Installer-Lanceur.ps1']) { ecrirePs(join(SITE, 'lanceur', f), lire('lanceur/' + f) + '\n'); }
+for (const f of ['lanceur.ps1', 'Installer-Lanceur.ps1']) {
+  const buf = ecrirePs(join(SITE, 'lanceur', f), lire('lanceur/' + f) + '\n');
+  if (f === 'lanceur.ps1') { cat.lanceur = { sha256: createHash('sha256').update(buf).digest('hex').toUpperCase() }; }   // mise à jour automatique des lanceurs installés
+}
 
 if (erreurs.length) { console.error('ÉCHEC de la construction :\n  - ' + erreurs.join('\n  - ')); process.exit(1); }
 cat.genere = new Date().toISOString().slice(0, 16);

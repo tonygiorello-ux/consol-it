@@ -33,7 +33,10 @@
       "prerequis": "Première session ouverte, écrans réglés, logiciels installés, Office et navigateurs lancés une fois puis fermés.",
       "source": "poste/Restaure-Poste.ps1",
       "assemblage": "poste",
-      "libelle": "Restaurer et contrôler"
+      "libelle": "Restaurer et contrôler",
+      "arguments": [
+        "-Restaurer"
+      ]
     },
     {
       "id": "restaure-verif",

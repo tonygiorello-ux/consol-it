@@ -15,6 +15,7 @@
                                .\Restaure-Poste.ps1 -Source "E:\Migration\ANCIENPC_jdupont_20261012_0915"
     Contrôle seul (à relancer après les corrections manuelles, ne modifie rien) :
                                .\Restaure-Poste.ps1 -Source "E:\Migration\..." -VerifierSeulement
+    Sans -Restaurer ni -VerifierSeulement, le script demande le mode avant de commencer.
 
   Produit dans le dossier source :
     Rapport_Migration_<date>.html      : comparaison ancien / nouveau poste, écarts, check-list manuelle
@@ -25,6 +26,7 @@
 param(
   [string]$Source,
   [switch]$VerifierSeulement,
+  [switch]$Restaurer,        # restauration sans question (sinon le mode est demandé)
   [switch]$SansLanceur,      # ne pas installer le lanceur de corrections (boutons « Appliquer » du rapport)
   [switch]$RetirerLanceur    # retirer le lanceur de corrections puis quitter
 )
@@ -38,6 +40,18 @@ if ($RetirerLanceur) {
   Write-Host 'Lanceur de corrections retiré.' -ForegroundColor Green
   return
 }
+if ($VerifierSeulement -and $Restaurer) { throw 'Choisir -Restaurer OU -VerifierSeulement, pas les deux.' }
+if (-not $VerifierSeulement -and -not $Restaurer) {
+  Write-Host ''
+  Write-Host '==== Que faire ? ====' -ForegroundColor Cyan
+  Write-Host '  [1] Restaurer puis contrôler : remet en place l''environnement de l''ancien poste (MODIFIE ce poste ;'
+  Write-Host '      l''état actuel est sauvegardé avant, pour retour arrière)'
+  Write-Host '  [2] Vérifier seulement : compare ancien / nouveau poste et régénère le rapport, sans rien modifier'
+  do { $choix = ([string](Read-Host '  Choix (1 ou 2)')).Trim() } until ($choix -eq '1' -or $choix -eq '2')
+  if ($choix -eq '2') { $VerifierSeulement = [switch]$true } else { $Restaurer = [switch]$true }
+}
+if ($VerifierSeulement) { Write-Host 'Mode : VÉRIFICATION SEULE — rien ne sera modifié sur ce poste.' -ForegroundColor Green }
+else { Write-Host 'Mode : RESTAURATION — l''environnement de l''ancien poste va être appliqué à ce poste.' -ForegroundColor Yellow }
 function Find-Inventaires {
   # Cherche les dossiers d'inventaire (inventaire.json) sur tous les lecteurs : racine, \Migration\*, et un niveau en dessous
   $res = @()

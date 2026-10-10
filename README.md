@@ -122,7 +122,8 @@ Le build convertit chaque script en UTF-8 avec BOM et en CRLF. Il calcule aussi 
    - Pour les audits, Windows demande l'élévation (UAC).
    - L'inventaire et la restauration s'ouvrent dans la session de l'utilisateur, sans élévation : ils lisent et écrivent son profil.
 3. Le lanceur est **valable 8 heures**. Il se retire ensuite seul : une tâche planifiée de l'utilisateur s'en charge, et il vérifie aussi sa date à chaque clic. Réinstaller le prolonge de 8 h. Pour le retirer plus tôt : menu **Lanceur**, puis copier la commande de retrait.
-4. **Restauration** : deux boutons sur la même fiche, **Restaurer et contrôler**, ou **Vérifier seulement** (`-VerifierSeulement` : ne modifie rien, régénère le rapport).
+4. **Restauration** : deux boutons sur la même fiche, **Restaurer et contrôler** (`-Restaurer`) ou **Vérifier seulement** (`-VerifierSeulement` : ne modifie rien, régénère le rapport). Lancé sans l'une de ces options, le script demande le mode avant de commencer.
+5. **Mise à jour du lanceur** : le manifeste publie l'empreinte du lanceur. Un lanceur installé dont l'empreinte diffère télécharge la nouvelle version, la vérifie, puis relance l'action. Pas besoin de le réinstaller après une modification de `sources/lanceur/lanceur.ps1`. En revanche, une modification de l'installeur demande une réinstallation.
 
 Chaque fiche propose aussi **Copier la commande**. Elle lance le script sans le lanceur.
 

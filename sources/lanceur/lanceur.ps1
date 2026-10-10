@@ -45,6 +45,19 @@ try {
   $wc = New-Object System.Net.WebClient
   $wc.Headers['Cache-Control'] = 'no-cache'
   $man = [Text.Encoding]::UTF8.GetString($wc.DownloadData("$base/manifest.json?t=$([DateTime]::UtcNow.Ticks)")).TrimStart([char]0xFEFF) | ConvertFrom-Json
+  # Mise à jour automatique du lanceur : si le site publie une autre version, on la télécharge, on vérifie
+  # son empreinte (manifeste) puis on relance la même action avec la nouvelle version.
+  $hash = { param($b) [BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($b)).Replace('-', '') }
+  $attendu = [string]$man.lanceur.sha256
+  if ($attendu -match '^[0-9A-Fa-f]{64}$' -and (& $hash ([IO.File]::ReadAllBytes($PSCommandPath))) -ne $attendu.ToUpperInvariant()) {
+    $neuf = $wc.DownloadData("$base/lanceur/lanceur.ps1?v=$($attendu.Substring(0, 12))")
+    if ((& $hash $neuf) -ne $attendu.ToUpperInvariant()) { Stop-Erreur 'Mise à jour du lanceur refusée : empreinte différente de celle du manifeste.' }
+    [IO.File]::WriteAllBytes($PSCommandPath, $neuf)
+    $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    Start-Process -FilePath $ps -ArgumentList ('-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}" "consoleit:run/{1}"' -f $PSCommandPath, $id) -WindowStyle Hidden
+    exit 0
+  }
+
   $e = @($man.scripts | Where-Object { $_.id -eq $id }) | Select-Object -First 1
   if (-not $e) { Stop-Erreur "Action inconnue sur $base : $id" }
   if ([string]$e.fichier -notmatch '^[A-Za-z0-9_.-]+\.ps1$' -or [string]$e.sha256 -notmatch '^[0-9A-Fa-f]{64}$') { Stop-Erreur "Entrée de manifeste invalide pour $id." }
