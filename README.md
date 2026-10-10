@@ -24,6 +24,7 @@ sources/                     ← ce que l'on modifie
 site/                        ← publié par Cloudflare
   index.html, _headers, robots.txt   (versionnés)
   scripts/, lanceur/, manifest.json  (GÉNÉRÉS par le build, non versionnés)
+worker/index.js              accès par code PIN (session navigateur + jeton du lanceur)
 outils/build.mjs             construit site/ à partir de sources/ (Node.js, sans dépendance)
 wrangler.jsonc               déploiement Cloudflare : build automatique puis publication de site/
 tests/Lancer-Tests.ps1       encodage, syntaxe, audits exécutés sur données factices
@@ -69,14 +70,26 @@ Le fichier `wrangler.jsonc` décrit le déploiement. Le site statique est le dos
 3. Chaque push sur `main` republie le site sur `https://consol-it.<compte>.workers.dev`. Le journal se trouve dans l'onglet **Deployments** du Worker, puis **View build**.
 4. Domaine personnalisé (conseillé) : dans le Worker, **Settings**, **Domains & Routes**, **Add**, puis **Custom domain**.
 
-### 4. Protéger la console (Cloudflare Zero Trust, Access)
+### 4. Code PIN (accès à la console)
 
-1. Créer une application **Self-hosted** sur le domaine de la console **et** sur `consol-it.<compte>.workers.dev`.
-   Règle *Allow* : les e-mails autorisés.
-2. Créer une **seconde application** sur les mêmes domaines, limitée aux chemins `scripts/*`, `lanceur/*` et `manifest.json`.
-   Règle *Bypass* : *Everyone*.
-   Le lanceur télécharge ces fichiers hors du navigateur, donc sans la session Access. Ils ne contiennent aucun secret.
-3. Activer l'authentification à deux facteurs sur les comptes Cloudflare et GitHub. Celui qui peut pousser sur `main` décide de ce que le lanceur exécute.
+Le Worker `worker/index.js` est placé devant le site. Sans session valide, toute page redirige vers l'écran du code PIN.
+
+**Dans Cloudflare**, ouvrir le Worker `consol-it`, puis **Settings**, **Variables and Secrets**, **Add**. Créer deux variables de type **Secret** :
+
+| Nom | Valeur |
+|---|---|
+| `PIN` | le code d'accès : 6 caractères minimum, **8 chiffres ou plus conseillé** |
+| `CLE_SESSION` | une chaîne aléatoire d'au moins 32 caractères, par exemple le résultat de `-join ((48..57)+(65..90)+(97..122) \| Get-Random -Count 48 \| % {[char]$_})` |
+
+Sans ces deux secrets, le site affiche un message de configuration au lieu de la console. Changer `CLE_SESSION` déconnecte toutes les sessions et invalide les lanceurs installés. Changer `PIN` ne touche pas aux sessions déjà ouvertes.
+
+**Fonctionnement :**
+- **Navigateur :** le bon PIN ouvre une session de 8 h, sous forme de cookie signé `HttpOnly` / `Secure`. Le lien « Se déconnecter » se trouve dans la barre latérale.
+- **Essais limités :** 5 essais par minute et par adresse IP, avec un délai après chaque erreur.
+- **Lanceur et commandes copiées :** la console leur ajoute un **jeton signé valable 8 h**, envoyé dans l'en-tête `X-Console-Jeton`. Ce jeton n'ouvre que `manifest.json`, `scripts/` et `lanceur/`, jamais la console. Il expire en même temps que le lanceur.
+- **Test local :** copier `.dev.vars.exemple` en `.dev.vars` (fichier non versionné), puis lancer `npx wrangler dev`.
+
+**Pour aller plus loin :** pour exiger une identité (e-mail ou compte Microsoft) en plus du PIN, ajouter Cloudflare Access sur le domaine. Le PIN reste alors une seconde barrière.
 
 ---
 

@@ -1,13 +1,21 @@
-// Déploiement Cloudflare Workers (site statique) : « npx wrangler deploy »
-// La commande de build ci-dessous s'exécute automatiquement avant chaque déploiement
-// (Workers Builds sur push GitHub, ou en local) : elle génère site/scripts, site/lanceur et site/manifest.json.
+// Déploiement Cloudflare Workers : « npx wrangler deploy »
+// - build : génère site/scripts, site/lanceur et site/manifest.json avant chaque déploiement
+// - main : Worker placé devant le site (accès par code PIN, voir worker/index.js)
+// - secrets à créer dans Cloudflare (Worker > Settings > Variables and Secrets) : PIN et CLE_SESSION
 {
   "name": "consol-it",
+  "main": "worker/index.js",
   "compatibility_date": "2025-09-01",
   "build": {
     "command": "node outils/build.mjs"
   },
   "assets": {
-    "directory": "./site"
-  }
+    "directory": "./site",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  // 5 essais de PIN par minute et par adresse IP
+  "ratelimits": [
+    { "name": "LIMITE_PIN", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } }
+  ]
 }

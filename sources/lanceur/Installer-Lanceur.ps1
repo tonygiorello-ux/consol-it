@@ -11,6 +11,7 @@
 #>
 param(
   [string]$Base,
+  [string]$Jeton,                                 # jeton de téléchargement fourni par la console (accès protégé par PIN)
   [ValidateRange(1, 72)][int]$DureeHeures = 8,   # durée de vie du lanceur sur le poste
   [switch]$Desinstaller
 )
@@ -32,12 +33,16 @@ if ($Base -notmatch '^(https://[a-zA-Z0-9.-]+(:\d+)?|http://(localhost|127\.0\.0
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072
 $wc = New-Object System.Net.WebClient
+if ($Jeton) {
+  if ($Jeton -notmatch '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$') { throw 'Jeton invalide : recopier la commande depuis la console.' }
+  $wc.Headers['X-Console-Jeton'] = $Jeton
+}
 $bytes = $wc.DownloadData("$Base/lanceur/lanceur.ps1?t=$([DateTime]::UtcNow.Ticks)")
 New-Item -ItemType Directory -Path $Dir -Force | Out-Null
 $lanceur = Join-Path $Dir 'lanceur.ps1'
 [IO.File]::WriteAllBytes($lanceur, $bytes)
 $fin = [DateTime]::UtcNow.AddHours($DureeHeures)
-[IO.File]::WriteAllText((Join-Path $Dir 'config.json'), (@{ base = $Base; installe = [DateTime]::UtcNow.ToString('yyyyMMddHHmm'); expire = $fin.ToString('yyyyMMddHHmm') } | ConvertTo-Json), (New-Object Text.UTF8Encoding $false))
+[IO.File]::WriteAllText((Join-Path $Dir 'config.json'), (@{ base = $Base; jeton = $Jeton; installe = [DateTime]::UtcNow.ToString('yyyyMMddHHmm'); expire = $fin.ToString('yyyyMMddHHmm') } | ConvertTo-Json), (New-Object Text.UTF8Encoding $false))
 
 $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 New-Item -Path $Cle -Force | Out-Null

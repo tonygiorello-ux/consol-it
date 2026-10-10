@@ -39,7 +39,7 @@ nav a{display:flex;align-items:center;gap:10px;color:var(--sideInk);text-decorat
 nav a:hover{background:var(--side2)}
 nav a.on{background:var(--side2);color:#fff;font-weight:600}
 nav a i{font-style:normal;margin-left:auto;font-size:12px;opacity:.7}
-.lstate{margin-top:auto;font-size:12.5px;line-height:1.45;background:var(--side2);border-radius:10px;padding:10px 12px}
+.lstate+.lstate{margin-top:0}.lstate{margin-top:auto;font-size:12.5px;line-height:1.45;background:var(--side2);border-radius:10px;padding:10px 12px}
 .lstate b{color:#fff}
 main{padding-inline:32px;padding-block:28px 60px;min-width:0}
 .view{display:none;max-width:1100px}.view.on{display:block}
@@ -100,7 +100,8 @@ pre .c{color:var(--codemute)}
       <div class="g">Ce poste</div>
       <a href="#lanceur" data-v="lanceur">Lanceur</a>
     </nav>
-    <div class="lstate">Les scripts s'exécutent <b>sur le poste</b> où cette page est ouverte. Rapports et dossiers de migration restent <b>en local</b> : rien n'est envoyé au site.</div>
+    <div class="lstate"><span id="sess"></span> <a href="/logout" style="color:#fff">Se déconnecter</a></div>
+    <div class="lstate" style="margin-top:0">Les scripts s'exécutent <b>sur le poste</b> où cette page est ouverte. Rapports et dossiers de migration restent <b>en local</b> : rien n'est envoyé au site.</div>
   </aside>
   <main>
     <p class="alert err" id="err">Le catalogue des scripts (manifest.json) est introuvable : le build n'a pas été exécuté lors du déploiement (il génère manifest.json, scripts/ et lanceur/). En local, lancer d'abord node outils/build.mjs.</p>
@@ -151,12 +152,13 @@ pre .c{color:var(--codemute)}
   var O = location.origin;
   var TLS = '[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072; ';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function inst(extra) { return TLS + "& ([scriptblock]::Create([Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('" + O + "/lanceur/Installer-Lanceur.ps1')).TrimStart([char]0xFEFF)))" + extra; }
-  document.getElementById('cmd-install').textContent = inst(" -Base '" + O + "'");
+  var JETON = '';
+  function wc() { return "$w = New-Object Net.WebClient; " + (JETON ? "$w.Headers['X-Console-Jeton'] = '" + JETON + "'; " : ''); }
+  function inst() { return TLS + wc() + "& ([scriptblock]::Create([Text.Encoding]::UTF8.GetString($w.DownloadData('" + O + "/lanceur/Installer-Lanceur.ps1')).TrimStart([char]0xFEFF))) -Base '" + O + "'" + (JETON ? " -Jeton '" + JETON + "'" : ''); }
   document.getElementById('cmd-remove').textContent = "Remove-Item 'HKCU:\\Software\\Classes\\consoleit' -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item \"$env:LOCALAPPDATA\\ConsoleIT\" -Recurse -Force -ErrorAction SilentlyContinue; Unregister-ScheduledTask -TaskName 'ConsoleIT-Expiration' -Confirm:$false -ErrorAction SilentlyContinue; Write-Host 'Lanceur retiré.'";
 
   function direct(s) {
-    var head = TLS + "$f = Join-Path $env:TEMP '" + s.fichier + "'; (New-Object Net.WebClient).DownloadFile('" + O + "/scripts/" + s.fichier + "', $f); ";
+    var head = TLS + wc() + "$f = Join-Path $env:TEMP '" + s.fichier + "'; $w.DownloadFile('" + O + "/scripts/" + s.fichier + "', $f); ";
     var opt = (s.arguments || []).filter(function (a) { return /^-[A-Za-z][A-Za-z0-9]{0,40}$/.test(a); }).join(' ');
     return s.admin ? head + "Start-Process powershell.exe -Verb RunAs -ArgumentList ('-NoProfile -ExecutionPolicy Bypass -NoExit -File \"{0}\"" + (opt ? ' ' + opt : '') + "' -f $f)"
                    : head + "powershell.exe -NoProfile -ExecutionPolicy Bypass -File $f" + (opt ? ' ' + opt : '');
@@ -184,7 +186,18 @@ pre .c{color:var(--codemute)}
       '<div class="acts">' + btns + '<span class="sha" title="Empreinte SHA-256 vérifiée par le lanceur">' + esc(s.sha256.slice(0, 12)) + '</span></div></article>';
   }
   var GRP = [['annuaire', 'Annuaire', 'AD, DNS, DHCP'], ['sauvegarde', 'Sauvegarde', 'Veeam'], ['virtualisation', 'Virtualisation', 'Hyper-V, ESXi, vCenter'], ['outils', 'Outils', '']];
-  fetch('manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); }).then(function (m) {
+  function hm(t) { var d = new Date(t * 1000); return ('0' + d.getHours()).slice(-2) + 'h' + ('0' + d.getMinutes()).slice(-2); }
+  var pJeton = fetch('/api/jeton', { cache: 'no-store', credentials: 'same-origin' }).then(function (r) {
+    if (r.status === 401) { location.href = '/login'; throw new Error('session'); }
+    return r.ok ? r.json() : null;
+  }).catch(function () { return null; });
+  Promise.all([fetch('manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); }), pJeton]).then(function (res) {
+    var m = res[0], j = res[1];
+    if (j && j.jeton) {
+      JETON = j.jeton;
+      document.getElementById('sess').innerHTML = 'Session ouverte jusqu\u2019à <b>' + hm(j.sessionExp) + '</b>. Commandes PowerShell valables jusqu\u2019à <b>' + hm(j.exp) + '</b>.';
+    }
+    document.getElementById('cmd-install').textContent = inst();
     var S = (m.scripts || []).filter(function (s) {
       if (s.parent) { (KIDS[s.parent] = KIDS[s.parent] || []).push(s); return false; }
       return true;

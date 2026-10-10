@@ -44,6 +44,7 @@ try {
   [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072   # TLS 1.2
   $wc = New-Object System.Net.WebClient
   $wc.Headers['Cache-Control'] = 'no-cache'
+  if ([string]$cfg.jeton -match '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$') { $wc.Headers['X-Console-Jeton'] = [string]$cfg.jeton }
   $man = [Text.Encoding]::UTF8.GetString($wc.DownloadData("$base/manifest.json?t=$([DateTime]::UtcNow.Ticks)")).TrimStart([char]0xFEFF) | ConvertFrom-Json
   # Mise à jour automatique du lanceur : si le site publie une autre version, on la télécharge, on vérifie
   # son empreinte (manifeste) puis on relance la même action avec la nouvelle version.
@@ -98,5 +99,6 @@ try {
     throw
   }
 } catch {
+  if ($_.Exception.Message -match '\(401\)') { Stop-Erreur "Accès refusé par la console (jeton absent ou expiré).`n`nRéinstaller le lanceur : console, menu Lanceur, commande d'installation." }
   Stop-Erreur "Le lancement a échoué : $($_.Exception.Message)"
 }

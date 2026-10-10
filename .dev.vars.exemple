@@ -1,0 +1,3 @@
+# Secrets pour « npx wrangler dev » (copier en .dev.vars, jamais versionné)
+PIN=12345678
+CLE_SESSION=remplacer-par-une-longue-chaine-aleatoire-de-48-caracteres
