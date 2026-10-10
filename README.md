@@ -143,6 +143,14 @@ Le build convertit chaque script en UTF-8 avec BOM et en CRLF. Il calcule aussi 
 
 Chaque fiche propose aussi **Copier la commande**. Elle lance le script sans le lanceur.
 
+**Corrections depuis les rapports :**
+- **Bouton ⚙️ :** ouvre directement l'écran Windows concerné (Paramètres).
+- **Bouton ▶ :** lance la commande de correction sur le poste, via le lanceur. Une fenêtre affiche la commande exacte et demande confirmation, puis Windows demande l'élévation (UAC) si nécessaire.
+- **Sécurité du ▶ :** les commandes sont enregistrées localement par le script qui a produit le rapport (`%LOCALAPPDATA%\ConsoleIT\actions`, conservées 8 h). Le lien ne contient qu'un numéro : une page web ne peut rien faire exécuter d'autre.
+- **Cas où il faut copier la commande :**
+  - le lanceur n'est pas installé pour le compte qui exécute le script ;
+  - l'audit cible un serveur distant (WinRM), ou porte sur ESXi ou vCenter. Les commandes doivent alors tourner sur la cible, pas sur ce poste.
+
 ## Sécurité
 
 - Le lien `consoleit:run/<id>` ne transporte qu'un identifiant. Une page web, y compris un autre site, ne peut faire passer ni commande ni paramètre.

@@ -1,6 +1,7 @@
 # ==================================================================================
 #  AUDIT VMWARE ESXi (via SSH)
 # ==================================================================================
+$script:CorrectionsLocales = $false   # commandes à lancer dans la session SSH, pas sur ce poste
 $Rubriques = [ordered]@{
   'sante' = @('Santé et ressources', '❤️')
   'stock' = @('Stockage', '💽')

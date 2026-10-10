@@ -52,7 +52,7 @@ if ($hf.Count) {
   Add-Check -Rubrique 'maj' -Titre 'Derniers correctifs Windows' -Statut $(if ($age -gt 60) { 'CRIT' } elseif ($age -gt 40) { 'ATT' } else { 'OK' }) -Resume "Dernier correctif il y a $age j ($($hf[0].HotFixID))" `
     -Table (To-Table @($hf | Select-Object -First 8 | ForEach-Object { [pscustomobject]@{ Correctif = $_.HotFixID; InstalleLe = $_.InstalledOn.ToString('dd/MM/yyyy'); Description = $_.Description } })) -Cible $h `
     -Reco $(if ($age -gt 40) { 'Windows publie un correctif cumulatif chaque mois : au-delà de 40 jours, le poste a raté au moins une mise à jour de sécurité. Vérifier Windows Update (erreurs, WSUS, service arrêté).' }) `
-    -Cmds $(if ($age -gt 40) { @(CmdUser 'Ouvrir Windows Update' 'Start-Process ms-settings:windowsupdate') })
+    -Cmds $(if ($age -gt 40) { @(Ouvrir 'Ouvrir Windows Update' 'ms-settings:windowsupdate') })
 }
 $rz = @(); if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending') { $rz += 'CBS' }; if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired') { $rz += 'Windows Update' }
 Add-Check -Rubrique 'maj' -Titre 'Redémarrage en attente' -Statut $(if ($rz.Count) { 'ATT' } else { 'OK' }) -Resume $(if ($rz.Count) { "Oui ($($rz -join ', ')) : les correctifs installés ne sont pas actifs" } else { 'Aucun' }) -Cible $h -Cmds $(if ($rz.Count) { @(Cmd 'Redémarrer le poste' 'Restart-Computer -Force') })

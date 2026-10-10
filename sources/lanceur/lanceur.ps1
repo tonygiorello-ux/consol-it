@@ -37,6 +37,35 @@ try {
   $base = ([string]$cfg.base).TrimEnd('/')
   if ($base -notmatch '^(https://[a-zA-Z0-9.-]+(:\d+)?|http://(localhost|127\.0\.0\.1)(:\d+)?)(/[A-Za-z0-9._~/-]*)?$') { Stop-Erreur "Configuration invalide : $base. Réinstaller le lanceur depuis la console." }
 
+  # --- Correction proposée par un rapport (bouton ▶) : consoleit:fix/<rapport>/<n>
+  # La commande n'est PAS dans le lien : elle est lue dans le fichier d'actions écrit sur ce poste par le script
+  # qui a produit le rapport (%LOCALAPPDATA%\ConsoleIT\actions). Une page web ne peut donc rien faire exécuter d'autre.
+  $dA = Join-Path $Dir 'actions'
+  Get-ChildItem -LiteralPath $dA -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -lt (Get-Date).AddHours(-8) } | Remove-Item -Force -ErrorAction SilentlyContinue
+  if ([string]$Url -match '^[A-Za-z][A-Za-z0-9+.-]*:(//)?fix/([A-Za-z0-9_.-]{1,160})/(\d{1,4})/?$') {
+    $rid = $Matches[2]; $num = $Matches[3]
+    $fa = Join-Path $dA "$rid.json"
+    if (-not (Test-Path -LiteralPath $fa)) { Stop-Erreur "Correction introuvable sur ce poste.`n`nLe rapport a été produit sur un autre poste ou par un autre compte, ou ses corrections ont expiré (8 h). Utiliser « voir / copier la commande » sous le bouton." }
+    $doc = Get-Content -LiteralPath $fa -Raw -Encoding UTF8 | ConvertFrom-Json
+    $act = @($doc.actions | Where-Object { [string]$_.id -eq $num }) | Select-Object -First 1
+    if (-not $act -or -not [string]$act.c) { Stop-Erreur "Correction n° $num absente du rapport $rid." }
+    $c = [string]$act.c
+    $aff = if ($c.Length -gt 700) { $c.Substring(0, 700) + ' …' } else { $c }
+    $mode = if ($act.adm) { 'PowerShell ADMINISTRATEUR (Windows va demander l''élévation)' } else { "PowerShell dans la session de $env:USERNAME" }
+    $msg = "Appliquer « $($act.l) » sur $env:COMPUTERNAME ?`n`nRapport : $($doc.rapport) ($($doc.cree))`nContrôle : $($act.titre)`nExécution : $mode`n`nCommande :`n$aff"
+    if ((Show-Box $msg 'YesNo' 'Question') -ne [System.Windows.Forms.DialogResult]::Yes) { exit 0 }
+    $esc = { param($t) ([string]$t) -replace "'", "''" }
+    $corps = "`$Host.UI.RawUI.WindowTitle = 'Console IT - correction'`r`nWrite-Host '$(& $esc $act.l)' -ForegroundColor Cyan`r`nWrite-Host ''`r`n$c`r`nWrite-Host ''`r`nWrite-Host 'Terminé. Relancer le diagnostic pour vérifier.' -ForegroundColor Green`r`n"
+    $fs = Join-Path $dA ("run_{0}_{1}.ps1" -f $rid, $num)
+    [IO.File]::WriteAllText($fs, $corps, (New-Object Text.UTF8Encoding $true))
+    $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $arg = '-NoProfile -ExecutionPolicy Bypass -NoExit -File "{0}"' -f $fs
+    try {
+      if ($act.adm) { Start-Process -FilePath $ps -ArgumentList $arg -Verb RunAs } else { Start-Process -FilePath $ps -ArgumentList $arg }
+    } catch { if ($_.Exception.Message -match 'annul|cancel') { exit 0 }; throw }
+    exit 0
+  }
+
   # consoleit:run/audit-ad  |  consoleit://run/audit-ad/  ->  audit-ad
   $id = ([string]$Url -replace '^[A-Za-z][A-Za-z0-9+.-]*:(//)?', '' -replace '^run/', '' -replace '[?#].*$', '').Trim('/').ToLowerInvariant()
   if ($id -notmatch '^[a-z0-9-]{1,40}$') { Stop-Erreur "Lien non reconnu : $Url" }

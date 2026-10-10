@@ -82,7 +82,15 @@ foreach ($e in $diags) {
   try { $d = $Matches[1] | ConvertFrom-Json } catch { KO "$k : JSON du rapport illisible"; continue }
   $n = @($d.checks).Count
   if ($n -lt 3) { KO "$k : rapport incomplet ($n contrôles)"; continue }
-  OK ("{0,-30} {1,3} contrôles · score {2} % · {3} critique(s), {4} attention" -f $k, $n, $d.score, $d.counts.CRIT, $d.counts.ATT)
+  $nCmd = @($d.checks | ForEach-Object { @($_.x) } | Where-Object { $_.t -eq 'cmd' }).Count
+  if ($nCmd) {
+    $fa = Join-Path $(if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { '/tmp/winlocal' }) ("ConsoleIT/actions/" + ($d.meta.id -replace '[^A-Za-z0-9_.-]', '_') + '.json')
+    if (-not $d.meta.launch -or -not (Test-Path $fa)) { KO "$k : corrections non lançables (lanceur simulé présent)"; continue }
+    $ids = @($d.checks | ForEach-Object { @($_.x) } | Where-Object { $_.t -eq 'cmd' -and $_.id }).Count
+    $fj = Get-Content $fa -Raw | ConvertFrom-Json
+    if ($ids -ne $nCmd -or @($fj.actions).Count -ne $nCmd) { KO "$k : identifiants de corrections incohérents ($ids / $nCmd / $(@($fj.actions).Count))"; continue }
+  }
+  OK ("{0,-30} {1,3} contrôles · score {2} % · {3} critique(s), {4} attention · {5} correction(s) lançable(s)" -f $k, $n, $d.score, $d.counts.CRIT, $d.counts.ATT, $nCmd)
 }
 
 Write-Host ''

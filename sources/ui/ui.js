@@ -121,7 +121,7 @@ function copyText(txt, ok) {
 }
 document.addEventListener('click', function (e) {
   var l = e.target.closest ? e.target.closest('[data-launch]') : null;
-  if (l) { toast('Ouverture du lanceur de corrections', 'Le navigateur demande d\u2019ouvrir Windows PowerShell : accepter, puis confirmer la correction dans la fenêtre qui s\u2019affiche.'); return; }
+  if (l) { toast('Ouverture du lanceur de corrections', 'Le navigateur demande d\u2019ouvrir le lanceur : accepter, puis confirmer la correction dans la fenêtre qui s\u2019affiche sur le poste.'); return; }
   var c = e.target.closest ? e.target.closest('[data-copy]') : null;
   if (!c) { return; }
   var hint = c.getAttribute('data-hint') || '';

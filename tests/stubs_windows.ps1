@@ -99,7 +99,7 @@ function Get-ItemProperty {
   if ($p -match 'Internet Settings') { return P @{ ProxyEnable = 0 } }
   $null
 }
-function Test-Path { param([Parameter(Position = 0)]$Path, $LiteralPath) $x = if ($LiteralPath) { $LiteralPath } else { $Path }; if ([string]$x -match '^HK|RebootRequired') { return ([string]$x -match 'RebootRequired') }; Microsoft.PowerShell.Management\Test-Path -LiteralPath $x }
+function Test-Path { param([Parameter(Position = 0)]$Path, $LiteralPath) $x = if ($LiteralPath) { $LiteralPath } else { $Path }; if ([string]$x -match '^HK|RebootRequired') { return ([string]$x -match 'RebootRequired|Classes\\consoleit') }; Microsoft.PowerShell.Management\Test-Path -LiteralPath $x }
 function Get-ChildItem { param([Parameter(Position = 0)]$Path, $Include, [switch]$Recurse, [switch]$File, [switch]$Directory, [switch]$Force, $Filter, $LiteralPath) @() }
 function Get-Item { param([Parameter(Position = 0)]$Path, $LiteralPath) $x = if ($LiteralPath) { $LiteralPath } else { $Path }; if ([string]$x -match '^HK|MEMORY') { return $null }; Microsoft.PowerShell.Management\Get-Item -LiteralPath $x }
 # commandes natives Windows

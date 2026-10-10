@@ -30,7 +30,7 @@ if ($pr.Count) {
   Add-Check -Rubrique 'imp' -Titre 'Imprimantes installées' -Statut $(if ($off.Count) { 'ATT' } else { 'OK' }) -Resume "$($rows.Count) imprimante(s)$(if ($off.Count) { " · hors ligne ou en erreur : $(($off | ForEach-Object { $_.Imprimante }) -join ', ')" })" -Table (To-Table $rows) -Cible $h `
     -Reco $(if ($off.Count) { 'Vérifier que l''imprimante est allumée et joignable (adresse IP, câble, Wi-Fi), puis la remettre en ligne dans Paramètres > Imprimantes.' })
   Add-Check -Rubrique 'imp' -Titre 'Imprimante par défaut' -Statut $(if ($def) { 'INFO' } else { 'ATT' }) -Resume $(if ($def) { $def } else { 'Aucune imprimante par défaut' }) -Cible $h `
-    -Reco $(if (-not $def) { 'Sans imprimante par défaut, certaines applications refusent d''imprimer ou ralentissent.' }) -Cmds @(CmdUser 'Ouvrir les paramètres des imprimantes' 'Start-Process ms-settings:printers')
+    -Reco $(if (-not $def) { 'Sans imprimante par défaut, certaines applications refusent d''imprimer ou ralentissent.' }) -Cmds @(Ouvrir 'Ouvrir les paramètres des imprimantes' 'ms-settings:printers')
   $ports = @(Get-PrinterPort | Where-Object { $_.PrinterHostAddress } | ForEach-Object { $ok = $false; try { $c = New-Object Net.Sockets.TcpClient; $ok = $c.ConnectAsync($_.PrinterHostAddress, $(if ($_.PortNumber) { $_.PortNumber } else { 9100 })).Wait(1500); $c.Close() } catch { }; [pscustomobject]@{ Port = $_.Name; Adresse = $_.PrinterHostAddress; PortTCP = $_.PortNumber; Joignable = $ok } })
   if ($ports.Count) {
     $ko = @($ports | Where-Object { -not $_.Joignable })

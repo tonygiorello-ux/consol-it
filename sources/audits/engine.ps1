@@ -7,6 +7,7 @@ $ProgressPreference = 'SilentlyContinue'
 $script:Debut  = Get-Date
 $script:Checks = New-Object System.Collections.Generic.List[object]
 $script:Cibles = New-Object System.Collections.Generic.List[string]
+$script:CorrectionsLocales = $true   # $false dès que la cible est distante : les commandes doivent alors tourner sur la cible
 
 # --- Réparation des accents des outils natifs (dcdiag, repadmin, w32tm, ssh...) ---
 try { [System.Text.Encoding]::RegisterProvider([System.Text.CodePagesEncodingProvider]::Instance) } catch { }
@@ -84,6 +85,7 @@ function Get-Cible($role, $indice) {
       $vrai = Invoke-Command @p
       Write-Host "  Connecté à $vrai." -ForegroundColor Green
       $script:Cibles.Add([string]$vrai)
+      $script:CorrectionsLocales = $false
       return [pscustomobject]@{ Nom = [string]$vrai; Locale = $false; Cred = $cred; Saisi = $nom }
     } catch {
       Write-Host "  Connexion impossible : $($_.Exception.Message)" -ForegroundColor Red
@@ -155,6 +157,7 @@ function Add-Check {
 }
 function Cmd($libelle, $commande) { [ordered]@{ t = 'cmd'; l = $libelle; c = $commande; adm = $true } }
 function CmdUser($libelle, $commande) { [ordered]@{ t = 'cmd'; l = $libelle; c = $commande; adm = $false } }
+function Ouvrir($libelle, $uri) { [ordered]@{ t = 'open'; l = $libelle; u = $uri } }   # écran Windows (ms-settings:...) ouvert directement par le navigateur
 function Lien($libelle, $chemin) { if ($chemin -and (Test-Path -LiteralPath $chemin)) { [ordered]@{ t = 'web'; l = $libelle; u = ([uri](Resolve-Path -LiteralPath $chemin).Path).AbsoluteUri } } }
 function Test-EstAdmin { ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) }
 function Cap([scriptblock]$sb) { try { ((& $sb 2>&1 | Out-String -Width 220).TrimEnd()) } catch { "[ERREUR] $($_.Exception.Message)" } }
@@ -173,13 +176,29 @@ function Save-Audit($nomFichier, $titre, $client, $rubriques, $prerequis) {
   $n = @{ OK = 0; ATT = 0; CRIT = 0; INFO = 0 }; foreach ($k in $all) { $n[$k.s]++ }
   $score = if (($n.OK + $n.ATT + $n.CRIT) -gt 0) { [math]::Floor($n.OK * 100 / ($n.OK + $n.ATT + $n.CRIT)) } else { 100 }
   $cibles = @($script:Cibles | Select-Object -Unique)
+  # Corrections lançables d'un clic (bouton ▶) : seulement si les commandes concernent ce poste et que le lanceur
+  # Console IT est installé pour ce compte. Les commandes sont enregistrées localement ; le lanceur n'exécute que celles-ci.
+  $launch = ''
+  if ($script:CorrectionsLocales -and (Test-Path 'HKCU:\Software\Classes\consoleit\shell\open\command')) {
+    $rid = ($nomFichier -replace '\.html$', '') -replace '[^A-Za-z0-9_.-]', '_'
+    $acts = New-Object System.Collections.Generic.List[object]; $num = 0
+    foreach ($k in $all) { foreach ($x in @($k.x)) { if ($x -and $x.t -eq 'cmd') { $num++; $x.id = [string]$num; $acts.Add([ordered]@{ id = [string]$num; l = $x.l; c = $x.c; adm = [bool]$x.adm; titre = $k.e; rapport = $titre }) } } }
+    if ($num) {
+      try {
+        $dA = Join-Path $env:LOCALAPPDATA 'ConsoleIT\actions'
+        New-Item -ItemType Directory -Path $dA -Force | Out-Null
+        [IO.File]::WriteAllText((Join-Path $dA "$rid.json"), ([ordered]@{ rapport = $titre; poste = $env:COMPUTERNAME; cree = (Get-Date).ToString('s'); actions = $acts.ToArray() } | ConvertTo-Json -Depth 5), (New-Object System.Text.UTF8Encoding $false))
+        $launch = "consoleit:fix/$rid/"
+      } catch { }
+    }
+  }
   $data = [ordered]@{
     type = 'audit'
     meta = [ordered]@{
       titre = $titre; client = $client; cibles = ($cibles -join ', ')
       par = "$env:USERDOMAIN\$env:USERNAME depuis $env:COMPUTERNAME"
       date = $script:Debut.ToString('dd/MM/yyyy HH:mm'); duree = ('{0:N0} s' -f ((Get-Date) - $script:Debut).TotalSeconds)
-      id = ($nomFichier -replace '\.html$', ''); prereq = $prerequis
+      id = ($nomFichier -replace '\.html$', ''); prereq = $prerequis; launch = $launch
     }
     score = [int]$score; counts = $n
     cats = @($rubriques.Keys | ForEach-Object { [ordered]@{ id = $_; nom = $rubriques[$_][0]; icon = $rubriques[$_][1] } })

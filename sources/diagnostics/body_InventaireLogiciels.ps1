@@ -48,7 +48,7 @@ $obs = @(foreach ($l in $log) { foreach ($r in $regles) { if ($l.Logiciel -match
 $crit = @($obs | Where-Object { $_.Gravite -eq 'CRIT' })
 Add-Check -Rubrique 'obs' -Titre 'Logiciels hors support ou à risque' -Statut $(if ($crit.Count) { 'CRIT' } elseif ($obs.Count) { 'ATT' } else { 'OK' }) -Resume $(if ($obs.Count) { "$($obs.Count) logiciel(s) : $(($obs | ForEach-Object { $_.Logiciel }) -join ', ')" } else { 'Aucun logiciel obsolète connu détecté' }) -Table (To-Table $obs) -Cible $h `
   -Reco $(if ($obs.Count) { 'Désinstaller ce qui ne sert plus, mettre à jour le reste (winget upgrade --all couvre une bonne partie des logiciels courants). Liste indicative : elle ne remplace pas un scanner de vulnérabilités.' }) `
-  -Cmds $(if ($obs.Count) { @((CmdUser 'Ouvrir Programmes et fonctionnalités' 'Start-Process appwiz.cpl'), (Cmd 'Lister les mises à jour disponibles (winget)' 'winget upgrade')) })
+  -Cmds $(if ($obs.Count) { @((Ouvrir 'Ouvrir Applications installées' 'ms-settings:appsfeatures'), (Cmd 'Lister les mises à jour disponibles (winget)' 'winget upgrade')) })
 $dbl = @($log | Group-Object Logiciel | Where-Object { $_.Count -gt 1 -and $_.Name -notmatch 'Visual C\+\+|\.NET|Runtime' } | ForEach-Object { [pscustomobject]@{ Logiciel = $_.Name; Versions = (($_.Group | ForEach-Object { $_.Version }) -join ' / ') } })
 if ($dbl.Count) { Add-Check -Rubrique 'obs' -Titre 'Logiciels installés en plusieurs versions' -Statut 'INFO' -Resume "$($dbl.Count) logiciel(s)" -Table (To-Table $dbl) -Cible $h -Reco 'Une ancienne version restée installée à côté de la nouvelle reste vulnérable : la désinstaller si elle n''est plus utilisée.' }
 

@@ -84,7 +84,7 @@ Show-Etape 'Démarrage'
 $su = @(Get-CimInstance Win32_StartupCommand | ForEach-Object { [pscustomobject]@{ Nom = $_.Name; Emplacement = $_.Location; Commande = $_.Command } })
 Add-Check -Rubrique 'boot' -Titre 'Programmes au démarrage' -Statut $(if ($su.Count -ge 15) { 'ATT' } else { 'OK' }) -Resume "$($su.Count) programme(s) lancé(s) à l'ouverture de session" -Table (To-Table $su) -Cible $h `
   -Reco $(if ($su.Count -ge 15) { 'Un démarrage surchargé ralentit l''ouverture de session : désactiver l''inutile (Gestionnaire des tâches > Applications de démarrage).' }) `
-  -Cmds $(if ($su.Count -ge 15) { @(CmdUser 'Ouvrir les applications de démarrage' 'Start-Process ms-settings:startupapps') })
+  -Cmds $(if ($su.Count -ge 15) { @(Ouvrir 'Ouvrir les applications de démarrage' 'ms-settings:startupapps') })
 $bt = Get-WinEvent -LogName 'Microsoft-Windows-Diagnostics-Performance/Operational' -FilterXPath '*[System[(EventID=100)]]' -MaxEvents 1
 if ($bt) {
   $x = [xml]$bt.ToXml(); $ms = ($x.Event.EventData.Data | Where-Object { $_.Name -eq 'BootTime' }).'#text'

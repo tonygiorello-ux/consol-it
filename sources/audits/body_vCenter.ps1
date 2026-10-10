@@ -1,6 +1,7 @@
 # ==================================================================================
 #  AUDIT VMWARE vCENTER (VCSA, via SSH)
 # ==================================================================================
+$script:CorrectionsLocales = $false   # commandes à lancer dans la session SSH, pas sur ce poste
 $Rubriques = [ordered]@{
   'svc'  = @('Services', '⚙️')
   'cert' = @('Certificats', '🔏')
