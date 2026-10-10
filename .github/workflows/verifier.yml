@@ -1,0 +1,21 @@
+name: Vérifier les scripts
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Construire le site
+        run: node outils/build.mjs
+      - name: Tests (encodage, syntaxe, audits sur données factices)
+        shell: pwsh
+        run: ./tests/Lancer-Tests.ps1

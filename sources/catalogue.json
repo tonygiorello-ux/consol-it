@@ -1,0 +1,161 @@
+{
+  "nom": "Console IT",
+  "protocole": "consoleit",
+  "scripts": [
+    {
+      "id": "inventaire",
+      "groupe": "poste",
+      "etape": 1,
+      "titre": "Inventaire du poste",
+      "fichier": "Inventaire-Poste.ps1",
+      "admin": false,
+      "cible": "Ancien poste, session de l’utilisateur",
+      "description": "Photographie complète de l’environnement : fond d’écran, icônes, barre des tâches, imprimantes, lecteurs, navigateurs, Outlook, logiciels. Génère la fiche de préparation et le script de copie des données.",
+      "questions": [
+        "Support du dossier de migration : clé ou disque USB, disque local, réseau (espace et FAT32 vérifiés)"
+      ],
+      "prerequis": "Lancer dans la session de l’utilisateur à migrer, sans élévation.",
+      "source": "poste/Inventaire-Poste.ps1",
+      "assemblage": "poste"
+    },
+    {
+      "id": "restaure",
+      "groupe": "poste",
+      "etape": 3,
+      "titre": "Restauration du poste",
+      "fichier": "Restaure-Poste.ps1",
+      "admin": false,
+      "cible": "Nouveau poste, session de l’utilisateur",
+      "description": "Recopie les données, remet l’environnement en place puis compare ancien et nouveau poste : écarts, corrections en un clic, check-list à valider avec l’utilisateur.",
+      "questions": [
+        "Dossier d’inventaire : recherché sur tous les lecteurs, clé USB comprise"
+      ],
+      "prerequis": "Première session ouverte, écrans réglés, logiciels installés, Office et navigateurs lancés une fois puis fermés.",
+      "source": "poste/Restaure-Poste.ps1",
+      "assemblage": "poste"
+    },
+    {
+      "id": "audit-ad",
+      "groupe": "annuaire",
+      "titre": "Audit Active Directory",
+      "fichier": "Audit-AD.ps1",
+      "admin": true,
+      "cible": "Contrôleur de domaine (local ou WinRM)",
+      "description": "Services, dcdiag, réplication, FSMO, heure, stratégie de mot de passe, comptes inactifs, admins, krbtgt, corbeille AD, Entra Connect.",
+      "questions": [
+        "Client / site",
+        "Contrôleur (Entrée = ce serveur)",
+        "Identifiants"
+      ],
+      "prerequis": "Compte administrateur du domaine.",
+      "source": "audits/body_AD.ps1",
+      "assemblage": "audit"
+    },
+    {
+      "id": "audit-dns",
+      "groupe": "annuaire",
+      "titre": "Audit DNS",
+      "fichier": "Audit-DNS.ps1",
+      "admin": true,
+      "cible": "Serveur DNS Windows (local ou WinRM)",
+      "description": "Redirecteurs testés, résolution Internet et SRV, zones, mises à jour non sécurisées, nettoyage et vieillissement, journal.",
+      "questions": [
+        "Client / site",
+        "Serveur DNS",
+        "Identifiants",
+        "Nom externe à résoudre"
+      ],
+      "prerequis": "Rôle DNS, compte administrateur.",
+      "source": "audits/body_DNS.ps1",
+      "assemblage": "audit"
+    },
+    {
+      "id": "audit-dhcp",
+      "groupe": "annuaire",
+      "titre": "Audit DHCP",
+      "fichier": "Audit-DHCP.ps1",
+      "admin": true,
+      "cible": "Serveur DHCP Windows (local ou WinRM)",
+      "description": "Autorisation AD, occupation des étendues, options, DNS distribués, basculement, sauvegarde de la base, journal d’audit.",
+      "questions": [
+        "Client / site",
+        "Serveur DHCP",
+        "Identifiants"
+      ],
+      "prerequis": "Administrateurs DHCP au minimum.",
+      "source": "audits/body_DHCP.ps1",
+      "assemblage": "audit"
+    },
+    {
+      "id": "audit-veeam",
+      "groupe": "sauvegarde",
+      "titre": "Audit Veeam B&R",
+      "fichier": "Audit-Veeam.ps1",
+      "admin": true,
+      "cible": "Serveur Veeam (local ou WinRM)",
+      "description": "Version, licence et support, résultat et ancienneté de chaque travail, dépôts et immuabilité, sauvegarde de configuration.",
+      "questions": [
+        "Client / site",
+        "Serveur Veeam",
+        "Identifiants",
+        "Âge maximal d’une sauvegarde"
+      ],
+      "prerequis": "Compte administrateur Veeam, v10 à v12.",
+      "source": "audits/body_Veeam.ps1",
+      "assemblage": "audit"
+    },
+    {
+      "id": "audit-hyperv",
+      "groupe": "virtualisation",
+      "titre": "Audit Hyper-V",
+      "fichier": "Audit-HyperV.ps1",
+      "admin": true,
+      "cible": "Hôte Hyper-V (local ou WinRM)",
+      "description": "Mémoire de l’hôte, VM, démarrage automatique, points de contrôle, disques et .avhdx orphelins, volumes, réseau, Réplica, cluster.",
+      "questions": [
+        "Client / site",
+        "Hôte Hyper-V",
+        "Identifiants"
+      ],
+      "prerequis": "Administrateur de l’hôte.",
+      "source": "audits/body_HyperV.ps1",
+      "assemblage": "audit"
+    },
+    {
+      "id": "audit-esxi",
+      "groupe": "virtualisation",
+      "titre": "Audit VMware ESXi",
+      "fichier": "Audit-ESXi.ps1",
+      "admin": true,
+      "cible": "Un ou plusieurs hôtes, par SSH",
+      "description": "État matériel, CPU/RAM, datastores, chemins, APD/PDL, snapshots, VM, réseau, version, certificat, licence, syslog.",
+      "questions": [
+        "Client / site",
+        "Hôtes",
+        "Compte et port SSH",
+        "Mot de passe (saisi dans ssh)"
+      ],
+      "prerequis": "SSH démarré sur les hôtes pendant l’audit.",
+      "source": "audits/body_ESXi.ps1",
+      "assemblage": "audit"
+    },
+    {
+      "id": "audit-vcenter",
+      "groupe": "virtualisation",
+      "titre": "Audit VMware vCenter",
+      "fichier": "Audit-vCenter.ps1",
+      "admin": true,
+      "cible": "Appliance VCSA, par SSH",
+      "description": "Services, certificats VECS, partitions, sauvegarde VAMI, version, expiration du mot de passe root.",
+      "questions": [
+        "Client / site",
+        "vCenter",
+        "Compte et port SSH",
+        "Mot de passe (saisi dans ssh)"
+      ],
+      "prerequis": "SSH activé dans la VAMI, shell bash pour root.",
+      "source": "audits/body_vCenter.ps1",
+      "assemblage": "audit"
+    }
+  ]
+}

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Console IT</title>
+<style>
+/* Layout : barre latérale (Poste / Administration / Lanceur), contenu en sections de fiches ; tokens clair/sombre */
+:root{
+  --bg:#eef1f5; --panel:#fff; --ink:#142030; --mute:#5a6779; --line:#dbe1e9; --soft:#f5f7fa;
+  --side:#0d2238; --side2:#14304f; --sideInk:#c6d4e5; --accent:#1c5ea8; --accentbg:#e5eef9;
+  --user:#0f6f62; --userbg:#dcf2ed; --adm:#9a3d0a; --admbg:#fbe9dc; --warn:#8a5100; --warnbg:#fdf0d8;
+  --code:#0e1a29; --codeink:#d6e2f0; --codemute:#7f95ae;
+  --f-ui:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  --f-mono:"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b1117; --panel:#131c27; --ink:#e3eaf2; --mute:#96a3b3; --line:#233041; --soft:#17212d;
+  --side:#08131f; --side2:#0f2236; --sideInk:#bccbdd; --accent:#7eb0ee; --accentbg:#15263a;
+  --user:#5fd0bd; --userbg:#0f2a26; --adm:#f2a46b; --admbg:#35200f; --warn:#f0b45a; --warnbg:#33250d;
+  --code:#060c13; --codeink:#cfdcec; --codemute:#71879f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1117; --panel:#131c27; --ink:#e3eaf2; --mute:#96a3b3; --line:#233041; --soft:#17212d;
+  --side:#08131f; --side2:#0f2236; --sideInk:#bccbdd; --accent:#7eb0ee; --accentbg:#15263a;
+  --user:#5fd0bd; --userbg:#0f2a26; --adm:#f2a46b; --admbg:#35200f; --warn:#f0b45a; --warnbg:#33250d;
+  --code:#060c13; --codeink:#cfdcec; --codemute:#71879f; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-ui)}
+a{color:var(--accent)}
+.app{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:100vh}
+aside{background:var(--side);color:var(--sideInk);padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:18px}
+.brand{font-weight:700;font-size:18px;color:#fff;letter-spacing:.01em}
+.brand small{display:block;font-weight:500;font-size:12px;color:var(--sideInk);opacity:.8;letter-spacing:.04em;margin-top:2px}
+nav{display:flex;flex-direction:column;gap:2px}
+nav .g{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.6;margin:12px 10px 4px}
+nav a{display:flex;align-items:center;gap:10px;color:var(--sideInk);text-decoration:none;padding:8px 10px;border-radius:8px;font-size:14.5px}
+nav a:hover{background:var(--side2)}
+nav a.on{background:var(--side2);color:#fff;font-weight:600}
+nav a i{font-style:normal;margin-left:auto;font-size:12px;opacity:.7}
+.lstate{margin-top:auto;font-size:12.5px;line-height:1.45;background:var(--side2);border-radius:10px;padding:10px 12px}
+.lstate b{color:#fff}
+main{padding-inline:32px;padding-block:28px 60px;min-width:0}
+.view{display:none;max-width:1100px}.view.on{display:block}
+h1{font-size:26px;line-height:1.2;margin:0 0 6px;text-wrap:balance}
+.lead{margin:0 0 22px;color:var(--mute);max-width:72ch}
+h2{font-size:17px;margin:30px 0 12px;display:flex;align-items:baseline;gap:10px}
+h2 span{font-size:13px;font-weight:500;color:var(--mute)}
+.flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card.info{background:var(--soft);border-style:dashed}
+.ch{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.card h3{margin:0;font-size:17px;line-height:1.3}
+.cible{margin:2px 0 0;font-size:13px;color:var(--mute)}
+.num{font:700 12px/1 var(--f-mono);color:var(--accent);letter-spacing:.06em;display:block;margin-bottom:6px}
+.desc{margin:0;font-size:14px}
+.mode{flex:none;font:600 11.5px/1 var(--f-ui);border-radius:999px;padding:6px 10px;white-space:nowrap}
+.mode.u{background:var(--userbg);color:var(--user)}.mode.a{background:var(--admbg);color:var(--adm)}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:auto}
+.btn{display:inline-flex;align-items:center;gap:8px;font:600 14px/1 var(--f-ui);border-radius:9px;padding:10px 15px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--accent)}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.go{color:#0b1117}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.go{color:#0b1117}}
+.btn:focus-visible,summary:focus-visible,nav a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sha{font:12px var(--f-mono);color:var(--mute);margin-left:auto}
+details{border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-size:13.5px;font-weight:600;color:var(--accent);list-style:none}
+summary::-webkit-details-marker{display:none}
+details[open] summary{margin-bottom:10px}
+dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;margin:0 0 10px;font-size:13.5px}
+dt{color:var(--mute)}dd{margin:0}dd ul{margin:0;padding-left:18px}
+pre{margin:0;background:var(--code);color:var(--codeink);border-radius:10px;padding:12px 14px;font:12.5px/1.6 var(--f-mono);overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+pre .c{color:var(--codemute)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.box p{margin:0}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.note{font-size:13.5px;color:var(--mute)}
+.alert{background:var(--warnbg);color:var(--warn);border-radius:10px;padding:12px 14px;font-size:14px}
+.err{display:none}.err.on{display:block}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:var(--code);color:var(--codeink);border-radius:12px;padding:12px 16px;font-size:14px;max-width:min(560px,calc(100vw - 32px));box-shadow:0 10px 30px rgba(0,0,0,.25);transition:.2s}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast b{display:block;color:#fff;margin-bottom:2px}
+@media (max-width:980px){.flow{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}
+@media (max-width:820px){.app{grid-template-columns:1fr}aside{position:static;height:auto;padding:14px 16px}nav{flex-direction:row;flex-wrap:wrap}nav .g{display:none}.lstate{display:none}main{padding-inline:16px}}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">Console IT<small>Scripts d'intervention</small></div>
+    <nav>
+      <div class="g">Interventions</div>
+      <a href="#poste" data-v="poste">Poste de travail<i id="n-poste"></i></a>
+      <a href="#admin" data-v="admin">Administration<i id="n-admin"></i></a>
+      <div class="g">Ce poste</div>
+      <a href="#lanceur" data-v="lanceur">Lanceur</a>
+    </nav>
+    <div class="lstate">Les scripts s'exécutent <b>sur le poste</b> où cette page est ouverte. Rapports et dossiers de migration restent <b>en local</b> : rien n'est envoyé au site.</div>
+  </aside>
+  <main>
+    <p class="alert err" id="err">Le catalogue des scripts (manifest.json) n'a pas pu être chargé. Ouvrir la console depuis son adresse https, pas depuis un fichier local.</p>
+
+    <section class="view" id="v-poste">
+      <h1>Poste de travail</h1>
+      <p class="lead">Migration d'un utilisateur vers un nouveau poste. Les deux scripts tournent dans la session de l'utilisateur, sans élévation : ils lisent et écrivent son profil.</p>
+      <div class="flow" id="flow"></div>
+    </section>
+
+    <section class="view" id="v-admin">
+      <h1>Administration</h1>
+      <p class="lead">Audits en lecture seule. Chaque script demande le serveur et les identifiants, puis ouvre un rapport HTML enregistré dans <code>Bureau\Rapports-Audit</code> du compte qui l'exécute.</p>
+      <div id="admin"></div>
+    </section>
+
+    <section class="view" id="v-lanceur">
+      <h1>Lanceur sur ce poste</h1>
+      <p class="lead">Un navigateur ne peut pas exécuter de programme. Le lanceur fait le lien : une petite installation par utilisateur, sans droits administrateur, qui associe les boutons « Lancer » à PowerShell.</p>
+      <div class="box">
+        <p><b>Installer</b> : ouvrir PowerShell (normal, pas administrateur) sur le poste, coller la commande, Entrée.</p>
+        <pre id="cmd-install"></pre>
+        <div class="acts"><button class="btn go" type="button" data-copy="cmd-install">Copier la commande d'installation</button></div>
+      </div>
+      <h2>Ce qui se passe à chaque clic sur « Lancer »</h2>
+      <div class="box">
+        <ol class="steps">
+          <li>Le navigateur demande d'ouvrir « Console IT » : accepter (cocher « toujours autoriser » si proposé).</li>
+          <li>Le lanceur lit le catalogue de ce site, télécharge le script et vérifie son empreinte SHA-256.</li>
+          <li>Une fenêtre sur le poste affiche l'action, le mode d'exécution et l'empreinte : confirmer.</li>
+          <li>Action d'administration : Windows demande l'élévation (UAC). Action poste : PowerShell s'ouvre dans la session de l'utilisateur.</li>
+        </ol>
+        <p class="note">Le lien ne transporte qu'un identifiant d'action : aucun paramètre ni aucune commande ne peut être passé par une page web. Seuls les scripts du catalogue de ce site peuvent être lancés, et toujours après confirmation sur le poste.</p>
+      </div>
+      <h2>Retirer le lanceur</h2>
+      <div class="box">
+        <p>À faire en fin d'intervention chez un client : supprime le protocole et les fichiers du lanceur pour cet utilisateur.</p>
+        <pre id="cmd-remove"></pre>
+        <div class="acts"><button class="btn" type="button" data-copy="cmd-remove">Copier la commande de retrait</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(function () {
+  'use strict';
+  var O = location.origin;
+  var TLS = '[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072; ';
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function inst(extra) { return TLS + "& ([scriptblock]::Create([Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('" + O + "/lanceur/Installer-Lanceur.ps1')).TrimStart([char]0xFEFF)))" + extra; }
+  document.getElementById('cmd-install').textContent = inst(" -Base '" + O + "'");
+  document.getElementById('cmd-remove').textContent = "Remove-Item 'HKCU:\\Software\\Classes\\consoleit' -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item \"$env:LOCALAPPDATA\\ConsoleIT\" -Recurse -Force -ErrorAction SilentlyContinue; Write-Host 'Lanceur retiré.'";
+
+  function direct(s) {
+    var head = TLS + "$f = Join-Path $env:TEMP '" + s.fichier + "'; (New-Object Net.WebClient).DownloadFile('" + O + "/scripts/" + s.fichier + "', $f); ";
+    return s.admin ? head + "Start-Process powershell.exe -Verb RunAs -ArgumentList ('-NoProfile -ExecutionPolicy Bypass -NoExit -File \"{0}\"' -f $f)"
+                   : head + "powershell.exe -NoProfile -ExecutionPolicy Bypass -File $f";
+  }
+  function card(s, num) {
+    return '<article class="card" id="s-' + esc(s.id) + '">' +
+      '<div class="ch"><div>' + (num ? '<span class="num">ÉTAPE ' + num + '</span>' : '') + '<h3>' + esc(s.titre) + '</h3><p class="cible">' + esc(s.cible) + '</p></div>' +
+      '<span class="mode ' + (s.admin ? 'a">Administrateur · UAC' : 'u">Session utilisateur') + '</span></div>' +
+      '<p class="desc">' + esc(s.description) + '</p>' +
+      '<details><summary>▸ Questions posées, prérequis, lancement sans lanceur</summary>' +
+      '<dl><dt>Questions</dt><dd><ul>' + (s.questions || []).map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ul></dd><dt>Prérequis</dt><dd>' + esc(s.prerequis) + '</dd>' +
+      '<dt>Version</dt><dd>' + esc(s.fichier) + ' · ' + esc(s.modifie) + ' · ' + Math.round(s.taille / 1024) + ' Ko</dd></dl>' +
+      '<pre id="d-' + esc(s.id) + '"><span class="c"># PowerShell ' + (s.admin ? 'normal : l’élévation est demandée ensuite' : 'dans la session de l’utilisateur') + '</span>\n' + esc(direct(s)) + '</pre>' +
+      '<div class="acts" style="margin-top:8px"><button class="btn" type="button" data-copy="d-' + esc(s.id) + '" data-strip="1">Copier la commande</button></div></details>' +
+      '<div class="acts"><a class="btn go" href="consoleit:run/' + esc(s.id) + '" data-run="' + esc(s.titre) + '">▶ Lancer</a><span class="sha" title="Empreinte SHA-256 vérifiée par le lanceur">' + esc(s.sha256.slice(0, 12)) + '</span></div></article>';
+  }
+  var GRP = [['annuaire', 'Annuaire', 'AD, DNS, DHCP'], ['sauvegarde', 'Sauvegarde', 'Veeam'], ['virtualisation', 'Virtualisation', 'Hyper-V, ESXi, vCenter'], ['outils', 'Outils', '']];
+  fetch('manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); }).then(function (m) {
+    var S = m.scripts || [];
+    var poste = S.filter(function (s) { return s.groupe === 'poste'; }).sort(function (a, b) { return (a.etape || 9) - (b.etape || 9); });
+    var inv = poste.filter(function (s) { return s.id === 'inventaire'; })[0], res = poste.filter(function (s) { return s.id === 'restaure'; })[0];
+    var copie = '<article class="card info"><div class="ch"><div><span class="num">ÉTAPE 2</span><h3>Copie des données</h3><p class="cible">Ancien poste, depuis le rapport d’inventaire</p></div><span class="mode u">Session utilisateur</span></div>' +
+      '<p class="desc">L’inventaire génère <code>Copie-Donnees.ps1</code> dans le dossier de migration, à partir de ce qu’il a trouvé sur ce poste. Le lancer depuis la page « Préparation » du rapport d’inventaire, puis transporter le dossier de migration (clé ou disque USB) vers le nouveau poste.</p>' +
+      '<p class="note" style="margin:auto 0 0">Données copiées en local uniquement : rien ne passe par ce site.</p></article>';
+    var others = poste.filter(function (s) { return s !== inv && s !== res; });
+    document.getElementById('flow').innerHTML = (inv ? card(inv, 1) : '') + copie + (res ? card(res, 3) : '') + others.map(function (s) { return card(s); }).join('');
+    document.getElementById('admin').innerHTML = GRP.map(function (g) {
+      var it = S.filter(function (s) { return s.groupe === g[0]; });
+      return it.length ? '<h2>' + esc(g[1]) + (g[2] ? '<span>' + esc(g[2]) + '</span>' : '') + '</h2><div class="grid">' + it.map(function (s) { return card(s); }).join('') + '</div>' : '';
+    }).join('');
+    document.getElementById('n-poste').textContent = poste.length;
+    document.getElementById('n-admin').textContent = S.length - poste.length;
+  }).catch(function () { document.getElementById('err').classList.add('on'); });
+
+  function route() {
+    var v = (location.hash || '#poste').slice(1); if (!document.getElementById('v-' + v)) { v = 'poste'; }
+    [].forEach.call(document.querySelectorAll('.view'), function (x) { x.classList.toggle('on', x.id === 'v-' + v); });
+    [].forEach.call(document.querySelectorAll('nav a'), function (a) { a.classList.toggle('on', a.getAttribute('data-v') === v); });
+  }
+  window.addEventListener('hashchange', route); route();
+
+  var t = document.getElementById('toast'), th;
+  function toast(b, s) { t.innerHTML = '<b>' + esc(b) + '</b>' + esc(s || ''); t.classList.add('on'); clearTimeout(th); th = setTimeout(function () { t.classList.remove('on'); }, 6000); }
+  document.addEventListener('click', function (e) {
+    var r = e.target.closest('[data-run]');
+    if (r) { toast('Lancement : ' + r.getAttribute('data-run'), 'Accepter l’ouverture de « Console IT », puis confirmer sur le poste. Si rien ne s’ouvre, installer le lanceur (menu Lanceur) ou utiliser « Copier la commande » de la fiche.'); return; }
+    var c = e.target.closest('[data-copy]');
+    if (!c) { return; }
+    var el = document.getElementById(c.getAttribute('data-copy'));
+    var txt = el.textContent; if (c.hasAttribute('data-strip')) { txt = txt.replace(/^#.*\n/, ''); }
+    var ok = function () { toast('Commande copiée', 'Coller dans PowerShell sur le poste, puis Entrée.'); };
+    var ko = function () { var g = document.createRange(); g.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(g); toast('Commande sélectionnée', 'Copier avec Ctrl+C.'); };
+    try { navigator.clipboard.writeText(txt).then(ok, ko); } catch (x) { ko(); }
+  });
+})();
+</script>
+</body>
+</html>

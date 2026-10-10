@@ -1,0 +1,11 @@
+# Scripts PowerShell : octets conservés tels quels (BOM UTF-8 + CRLF exigés par Windows PowerShell 5.1).
+# outils/build.mjs renormalise de toute façon les scripts publiés.
+*.ps1 -text
+*.mjs text eol=lf
+*.js  text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.md  text eol=lf
+*.yml text eol=lf
+_headers text eol=lf

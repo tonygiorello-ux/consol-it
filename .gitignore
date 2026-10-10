@@ -1,0 +1,9 @@
+# Générés par outils/build.mjs (Cloudflare les reconstruit à chaque déploiement)
+site/scripts/
+site/lanceur/
+site/manifest.json
+# Divers
+node_modules/
+.wrangler/
+Thumbs.db
+.DS_Store
