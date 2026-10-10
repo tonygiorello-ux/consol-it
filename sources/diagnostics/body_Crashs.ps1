@@ -37,7 +37,7 @@ $dumps = @(@(Get-ChildItem "$env:SystemRoot\Minidump\*.dmp") + @(Get-Item "$env:
 $rec = @($dumps | Where-Object { $_.LastWriteTime -gt $depuis })
 Add-Check -Rubrique 'bsod' -Titre 'Fichiers de vidage (dumps)' -Statut $(if ($rec.Count) { 'CRIT' } elseif ($dumps.Count) { 'INFO' } else { 'OK' }) -Resume $(if ($dumps.Count) { "$($dumps.Count) fichier(s), dont $($rec.Count) de moins de 30 jours" } else { 'Aucun (ou dossier non lisible sans droits administrateur)' }) `
   -Table (To-Table @($dumps | Sort-Object LastWriteTime -Descending | ForEach-Object { [pscustomobject]@{ Fichier = $_.FullName; Date = $_.LastWriteTime; Taille_Mo = [math]::Round($_.Length / 1MB, 1) } })) -Cible $h `
-  -Cmds $(if ($dumps.Count) { @(Cmd 'Ouvrir le dossier des vidages' "explorer.exe $(Q "$env:SystemRoot\Minidump")") })
+  -Cmds $(if ($dumps.Count) { @(CmdUser 'Ouvrir le dossier des vidages' "explorer.exe $(Q "$env:SystemRoot\Minidump")") })
 
 Show-Etape 'Erreurs matérielles'
 $wh = @(Get-WinEvent -FilterHashtable @{ LogName = 'System'; ProviderName = 'Microsoft-Windows-WHEA-Logger'; StartTime = $depuis })

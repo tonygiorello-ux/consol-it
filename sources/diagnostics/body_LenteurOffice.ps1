@@ -121,6 +121,6 @@ $ev = @(Get-WinEvent -FilterHashtable @{ LogName = 'Application'; ProviderName =
 $rows = @($ev | ForEach-Object { [pscustomobject]@{ Date = $_.TimeCreated; Application = $(if ($_.Message -match 'OUTLOOK') { 'Outlook' } elseif ($_.Message -match 'WINWORD') { 'Word' } else { 'Excel' }); Type = $(if ($_.ProviderName -eq 'Application Hang') { 'Blocage' } else { 'Plantage' }); Module = $(if ($_.Message -match '(?i)(?:module|nom du module)[^:]*:\s*([^\s,]+)') { $Matches[1] } else { '' }) } })
 Add-Check -Rubrique 'env' -Titre 'Plantages et blocages Office (7 jours)' -Statut $(if ($ev.Count) { 'ATT' } else { 'OK' }) -Resume $(if ($ev.Count) { "$($ev.Count) événement(s)" } else { 'Aucun' }) -Table (To-Table $rows) -Cible $h `
   -Reco $(if ($ev.Count) { 'Souvent un complément instable (voir rubrique Compléments, colonne Module) ou un fichier de données corrompu. Réparer Office si les plantages persistent.' }) `
-  -Cmds $(if ($ev.Count) { @(Cmd 'Ouvrir la réparation Office (Programmes et fonctionnalités)' 'Start-Process appwiz.cpl') })
+  -Cmds $(if ($ev.Count) { @(Ouvrir 'Réparer Office (Applications installées > Microsoft 365 > Modifier)' 'ms-settings:appsfeatures') })
 
 Save-Audit ("Diagnostic-Office_{0}_{1:yyyyMMdd_HHmm}.html" -f $h, $script:Debut) 'Diagnostic lenteur Office' '' $Rubriques $Prerequis

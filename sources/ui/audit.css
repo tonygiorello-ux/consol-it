@@ -14,3 +14,4 @@ a.prio b{display:block;font-weight:600}a.prio small{display:block;color:var(--mu
 a.prio em{font-style:normal;font-size:12px;color:var(--mute);white-space:nowrap}
 @media (max-width:860px){a.prio{grid-template-columns:auto 1fr}a.prio em{display:none}}
 @media print{details.raw,details.more{display:none}a.prio{break-inside:avoid}}
+.cpinfo{background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:13.5px;margin:0 0 16px}

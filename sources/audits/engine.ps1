@@ -179,7 +179,9 @@ function Save-Audit($nomFichier, $titre, $client, $rubriques, $prerequis) {
   # Corrections lançables d'un clic (bouton ▶) : seulement si les commandes concernent ce poste et que le lanceur
   # Console IT est installé pour ce compte. Les commandes sont enregistrées localement ; le lanceur n'exécute que celles-ci.
   $launch = ''
-  if ($script:CorrectionsLocales -and (Test-Path 'HKCU:\Software\Classes\consoleit\shell\open\command')) {
+  $lanceur = Test-Path 'HKCU:\Software\Classes\consoleit\shell\open\command'
+  $raison = if (-not $script:CorrectionsLocales) { 'les commandes concernent la cible auditée (serveur distant ou session SSH) : les exécuter sur la cible' } elseif (-not $lanceur) { "le lanceur Console IT n'est pas installé pour le compte $env:USERDOMAIN\$env:USERNAME qui a produit ce rapport (console, menu Lanceur, puis relancer le diagnostic)" } else { '' }
+  if ($script:CorrectionsLocales -and $lanceur) {
     $rid = ($nomFichier -replace '\.html$', '') -replace '[^A-Za-z0-9_.-]', '_'
     $acts = New-Object System.Collections.Generic.List[object]; $num = 0
     foreach ($k in $all) { foreach ($x in @($k.x)) { if ($x -and $x.t -eq 'cmd') { $num++; $x.id = [string]$num; $acts.Add([ordered]@{ id = [string]$num; l = $x.l; c = $x.c; adm = [bool]$x.adm; titre = $k.e; rapport = $titre }) } } }
@@ -198,7 +200,7 @@ function Save-Audit($nomFichier, $titre, $client, $rubriques, $prerequis) {
       titre = $titre; client = $client; cibles = ($cibles -join ', ')
       par = "$env:USERDOMAIN\$env:USERNAME depuis $env:COMPUTERNAME"
       date = $script:Debut.ToString('dd/MM/yyyy HH:mm'); duree = ('{0:N0} s' -f ((Get-Date) - $script:Debut).TotalSeconds)
-      id = ($nomFichier -replace '\.html$', ''); prereq = $prerequis; launch = $launch
+      id = ($nomFichier -replace '\.html$', ''); prereq = $prerequis; launch = $launch; launchInfo = $raison
     }
     score = [int]$score; counts = $n
     cats = @($rubriques.Keys | ForEach-Object { [ordered]@{ id = $_; nom = $rubriques[$_][0]; icon = $rubriques[$_][1] } })

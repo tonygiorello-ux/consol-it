@@ -16,6 +16,8 @@ function audit() {
   if (orphans.length) { var oc = { id: 'autres', nom: 'Autres contrôles', icon: '📋', items: orphans, n: { OK: 0, ATT: 0, CRIT: 0, INFO: 0 } }; orphans.forEach(function (k) { oc.n[k.s]++; }); oc.state = oc.n.CRIT ? 'bad' : (oc.n.ATT ? 'warn' : 'ok'); cats.push(oc); byId.autres = oc; }
   cats = cats.filter(function (c) { return c.items.length; });
   var crit = checks.filter(function (k) { return k.s === 'CRIT'; }), att = checks.filter(function (k) { return k.s === 'ATT'; });
+  var nCmd = checks.filter(function (k) { return k.s !== 'OK' && arr(k.x).some(function (x) { return x.t === 'cmd'; }); }).length;
+  var copieInfo = (!LAUNCH && nCmd && m.launchInfo) ? '<div class="cpinfo"><b>Corrections à copier.</b> Les boutons ▶ (lancement direct) ne sont pas disponibles : ' + esc(m.launchInfo) + '.</div>' : '';
 
   function tab(t) {
     if (!t || !t.cols) { return ''; }
@@ -71,7 +73,7 @@ function audit() {
   views.synthese =
     '<div class="hero ' + hcls + '"><div class="ring" style="--p:' + D.score + ';--c:' + ringC + '"><span>' + D.score + ' %<small>sain</small></span></div>' +
     '<div><h1>' + esc(htitle) + '</h1><p>' + esc(htext) + '</p><div class="cta">' + (crit.length || att.length ? '<a class="btn primary" href="#traiter">Voir les points à traiter →</a>' : '') + '</div></div></div>' +
-    '<div class="strip">' + (m.client ? '<span>Client : <b>' + esc(m.client) + '</b></span>' : '') + '<span>Cible : <b>' + esc(m.cibles || '—') + '</b></span><span>Audit du ' + esc(m.date) + ' · ' + esc(m.duree) + '</span><span>Par ' + esc(m.par) + '</span></div>' +
+    copieInfo + '<div class="strip">' + (m.client ? '<span>Client : <b>' + esc(m.client) + '</b></span>' : '') + '<span>Cible : <b>' + esc(m.cibles || '—') + '</b></span><span>Audit du ' + esc(m.date) + ' · ' + esc(m.duree) + '</span><span>Par ' + esc(m.par) + '</span></div>' +
     '<div class="kpis">' +
     '<a class="kpi ' + (crit.length ? 'bad' : 'ok') + '" href="#traiter"><b>' + crit.length + '</b><span>points critiques</span></a>' +
     '<a class="kpi ' + (att.length ? 'warn' : 'ok') + '" href="#traiter"><b>' + att.length + '</b><span>points d’attention</span></a>' +
@@ -81,7 +83,7 @@ function audit() {
     '<h2 class="sec">État par rubrique</h2><div class="tiles">' + tiles + '</div>';
 
   // ---- À traiter
-  views.traiter = vh('Points à traiter', crit.length || att.length ? plural(crit.length, 'critique') + ', ' + plural(att.length, 'point') + ' d’attention. Commencer par les critiques.' : '', '❗', 'Points à traiter') +
+  views.traiter = vh('Points à traiter', crit.length || att.length ? plural(crit.length, 'critique') + ', ' + plural(att.length, 'point') + ' d’attention. Commencer par les critiques.' : '', '❗', 'Points à traiter') + copieInfo +
     (crit.length || att.length ? cats.filter(function (c) { return c.n.CRIT || c.n.ATT; }).map(function (c) {
       return '<h2 class="sec"><span>' + c.icon + '</span>' + esc(c.nom) + '<a href="#' + c.id + '">Voir la rubrique →</a></h2>' +
         c.items.filter(function (k) { return k.s === 'CRIT' || k.s === 'ATT'; }).map(function (k) { return card(k); }).join('');
