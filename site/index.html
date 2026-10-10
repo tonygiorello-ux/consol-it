@@ -191,11 +191,17 @@ pre .c{color:var(--codemute)}
     if (r.status === 401) { location.href = '/login'; throw new Error('session'); }
     return r.ok ? r.json() : null;
   }).catch(function () { return null; });
+  // Session liée à la page : prolongée chaque minute, fermée dès qu'on quitte la console (code PIN redemandé).
+  setInterval(function () {
+    fetch('/api/session', { method: 'POST', cache: 'no-store', credentials: 'same-origin' }).then(function (r) { if (r.status === 401) { location.href = '/login'; } }, function () { });
+  }, 60000);
+  window.addEventListener('pagehide', function () { try { navigator.sendBeacon('/logout'); } catch (e) { } });
+  window.addEventListener('pageshow', function (e) { if (e.persisted) { location.reload(); } });
   Promise.all([fetch('manifest.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); }), pJeton]).then(function (res) {
     var m = res[0], j = res[1];
     if (j && j.jeton) {
       JETON = j.jeton;
-      document.getElementById('sess').innerHTML = 'Session ouverte jusqu\u2019à <b>' + hm(j.sessionExp) + '</b>. Commandes PowerShell valables jusqu\u2019à <b>' + hm(j.exp) + '</b>.';
+      document.getElementById('sess').innerHTML = 'Session active tant que cette page reste ouverte. Commandes PowerShell et lanceur valables jusqu\u2019à <b>' + hm(j.exp) + '</b>.';
     }
     document.getElementById('cmd-install').textContent = inst();
     var S = (m.scripts || []).filter(function (s) {

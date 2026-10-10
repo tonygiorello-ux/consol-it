@@ -1,6 +1,8 @@
 // Console IT — Worker placé devant le site statique : accès protégé par code PIN.
 //
-// - Navigateur : le PIN ouvre une session (cookie signé, HttpOnly, 8 h).
+// - Navigateur : le PIN ouvre une session liée à la page ouverte : cookie signé HttpOnly de courte durée (3 min),
+//   prolongé toutes les minutes par la console tant qu'elle est ouverte, effacé dès qu'on quitte la page.
+//   Quitter le site (onglet fermé, autre site, navigateur fermé, rechargement) = code PIN redemandé.
 // - Lanceur et commandes PowerShell : ils ne passent pas par le navigateur ; la console leur fournit
 //   un jeton signé valable 8 h (en-tête X-Console-Jeton), limité à manifest.json, scripts/ et lanceur/.
 // - Secrets à définir dans Cloudflare (Worker > Settings > Variables and Secrets, type Secret) :
@@ -8,7 +10,8 @@
 //     CLE_SESSION   clé aléatoire longue servant à signer sessions et jetons (ne jamais la réutiliser ailleurs)
 // - Essais de PIN limités par adresse IP (binding LIMITE_PIN, voir wrangler.jsonc) + délai après chaque échec.
 
-const DUREE_S = 8 * 3600;
+const DUREE_S = 8 * 3600;          // jeton du lanceur ; durée maximale d'une session
+const SESSION_S = 180;             // session navigateur : prolongée par la console tant que la page est ouverte
 const COOKIE = 'consoleit_session';
 const ENTETE_JETON = 'x-console-jeton';
 const CHEMINS_LANCEUR = /^\/(manifest\.json|scripts\/[A-Za-z0-9_.-]+\.ps1|lanceur\/[A-Za-z0-9_.-]+\.ps1)$/;
@@ -57,6 +60,11 @@ function reponse(corps, statut = 200, entetes = {}) {
   return new Response(corps, { status: statut, headers: { 'Content-Type': 'text/html; charset=utf-8', ...SECU, ...entetes } });
 }
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
+// Cookie de session (sans Max-Age : supprimé à la fermeture du navigateur), signé pour SESSION_S secondes.
+async function cookieSession(env, debut) {
+  const v = await signer(env, { t: 'session', deb: debut, exp: Math.floor(Date.now() / 1000) + SESSION_S });
+  return `${COOKIE}=${v}; Path=/; HttpOnly; Secure; SameSite=Strict`;
+}
 
 function pageConnexion(message = '', bloque = false) {
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Console IT</title>
@@ -81,7 +89,7 @@ ${message ? `<div class="e">${message}</div>` : ''}
 <label for="pin">Code PIN</label>
 <input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="one-time-code" maxlength="64" required autofocus ${bloque ? 'disabled' : ''}>
 <button type="submit" ${bloque ? 'disabled' : ''}>Entrer</button>
-<p>Session valable 8 heures sur ce navigateur.</p>
+<p>Le code est redemandé dès que vous quittez la console.</p>
 </form></div></body></html>`;
 }
 
@@ -110,21 +118,28 @@ export default {
         await attendre(1200);   // ralentit les essais en série
         return reponse(pageConnexion('Code PIN incorrect.'), 401);
       }
-      const session = await signer(env, { t: 'session', exp: Math.floor(Date.now() / 1000) + DUREE_S });
-      return new Response(null, { status: 303, headers: { Location: '/', 'Set-Cookie': `${COOKIE}=${session}; Path=/; Max-Age=${DUREE_S}; HttpOnly; Secure; SameSite=Lax`, ...SECU } });
+      const now = Math.floor(Date.now() / 1000);
+      return new Response(null, { status: 303, headers: { Location: '/', 'Set-Cookie': await cookieSession(env, now), ...SECU } });
     }
     if (chemin === '/logout') {
-      return new Response(null, { status: 303, headers: { Location: '/login', 'Set-Cookie': `${COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`, ...SECU } });
+      return new Response(null, { status: 303, headers: { Location: '/login', 'Set-Cookie': `${COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`, ...SECU } });
     }
 
-    const session = await verifier(env, lireCookie(req), 'session');
+    let session = await verifier(env, lireCookie(req), 'session');
+    if (session && !(session.deb + DUREE_S > Date.now() / 1000)) { session = null; }
+
+    // --- maintien de la session tant que la console est ouverte
+    if (chemin === '/api/session') {
+      if (!session) { return new Response('{"erreur":"session"}', { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }); }
+      return new Response('{"ok":true}', { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Set-Cookie': await cookieSession(env, session.deb) } });
+    }
 
     // --- jeton pour le lanceur et les commandes PowerShell (demandé par la console)
     if (chemin === '/api/jeton') {
       if (!session) { return new Response('{"erreur":"session"}', { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }); }
       const exp = Math.floor(Date.now() / 1000) + DUREE_S;
       const jeton = await signer(env, { t: 'dl', exp });
-      return new Response(JSON.stringify({ jeton, exp, sessionExp: session.exp }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
+      return new Response(JSON.stringify({ jeton, exp }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
     }
 
     if (session) { return env.ASSETS.fetch(req); }

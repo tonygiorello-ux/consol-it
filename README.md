@@ -84,7 +84,7 @@ Le Worker `worker/index.js` est placé devant le site. Sans session valide, tout
 Sans ces deux secrets, le site affiche un message de configuration au lieu de la console. Changer `CLE_SESSION` déconnecte toutes les sessions et invalide les lanceurs installés. Changer `PIN` ne touche pas aux sessions déjà ouvertes.
 
 **Fonctionnement :**
-- **Navigateur :** le bon PIN ouvre une session de 8 h, sous forme de cookie signé `HttpOnly` / `Secure`. Le lien « Se déconnecter » se trouve dans la barre latérale.
+- **Navigateur :** la session est liée à la page ouverte. C'est un cookie signé `HttpOnly` / `Secure` / `SameSite=Strict`, valable 3 minutes et prolongé chaque minute par la console. Il est effacé dès qu'on quitte la page : onglet fermé, autre site, navigateur fermé ou rechargement. Le PIN est alors redemandé. La durée maximale d'une session est de 8 h. Le lien « Se déconnecter » se trouve dans la barre latérale.
 - **Essais limités :** 5 essais par minute et par adresse IP, avec un délai après chaque erreur.
 - **Lanceur et commandes copiées :** la console leur ajoute un **jeton signé valable 8 h**, envoyé dans l'en-tête `X-Console-Jeton`. Ce jeton n'ouvre que `manifest.json`, `scripts/` et `lanceur/`, jamais la console. Il expire en même temps que le lanceur.
 - **Test local :** copier `.dev.vars.exemple` en `.dev.vars` (fichier non versionné), puis lancer `npx wrangler dev`.
